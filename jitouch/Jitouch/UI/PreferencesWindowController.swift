@@ -622,7 +622,11 @@ struct AddGestureSheet: View {
             settingsRow(L("Gesture"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
                 menuControl(title: model.addGesture) {
                     ForEach(model.availableAddGestures(), id: \.self) { gesture in
-                        Button(gesture) { model.addGesture = gesture }
+                        Button {
+                            model.addGesture = gesture
+                        } label: {
+                            menuItemLabel(title: gesture, isSelected: gesture == model.addGesture)
+                        }
                     }
                 }
             }
@@ -635,7 +639,11 @@ struct AddGestureSheet: View {
                 settingsRow(L("Command"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
                     menuControl(title: model.addCommand) {
                         ForEach(model.commands, id: \.self) { command in
-                            Button(command) { model.addCommand = command }
+                            Button {
+                                model.addCommand = command
+                            } label: {
+                                menuItemLabel(title: command, isSelected: command == model.addCommand)
+                            }
                         }
                     }
                 }
@@ -717,14 +725,28 @@ struct AddGestureSheet: View {
         Button {
             model.handleAddApplicationSelection(app.application)
         } label: {
-            Label {
-                Text(app.title)
-            } icon: {
-                if let icon = app.icon {
+            if let icon = app.icon {
+                Label {
+                    Text(app.title)
+                } icon: {
                     Image(nsImage: icon)
                 }
+            } else {
+                Text(app.title)
             }
         }
+    }
+
+    private func menuItemLabel(title: String, isSelected: Bool) -> some View {
+        Text(menuItemTitle(title, isSelected: isSelected))
+    }
+
+    private func menuItemTitle(_ title: String, isSelected: Bool) -> String {
+        "\(menuItemCheckmark(isSelected: isSelected)) \(title)"
+    }
+
+    private func menuItemCheckmark(isSelected: Bool) -> String {
+        isSelected ? "✓" : "  "
     }
 
     private func menuControl<Content: View>(

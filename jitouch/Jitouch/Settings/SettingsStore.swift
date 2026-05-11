@@ -16,13 +16,13 @@ final class SettingsStore {
         static let recognitionCommands = "RecognitionCommands"
     }
 
-    private let appID = "com.jitouch.Jitouch" as CFString
+    private let appID = "com.zhuanz.JitouchModern" as CFString
     private(set) var rawSettings: [String: Any] = [:]
     var settings = JitouchSettings()
 
     func load() {
         let url = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Preferences/com.jitouch.Jitouch.plist")
+            .appendingPathComponent("Library/Preferences/com.zhuanz.JitouchModern.plist")
 
         guard
             let data = try? Data(contentsOf: url),
@@ -49,10 +49,21 @@ final class SettingsStore {
     }
 
     func saveRuntimeToggle() {
-        rawSettings[Key.enabled] = settings.isEnabled ? 1 : 0
-        let value = NSNumber(value: settings.isEnabled)
-        CFPreferencesSetAppValue(Key.enabled as CFString, value, appID)
-        CFPreferencesAppSynchronize(appID)
+        setBool(settings.isEnabled, forKey: Key.enabled)
+        synchronize()
+    }
+
+    func updateGeneralSettings(_ update: (inout JitouchSettings) -> Void) {
+        update(&settings)
+        setBool(settings.isEnabled, forKey: Key.enabled)
+        setBool(settings.showsMenuBarIcon, forKey: Key.showIcon)
+        setDouble(settings.clickSpeed, forKey: Key.clickSpeed)
+        setDouble(settings.sensitivity, forKey: Key.sensitivity)
+        setBool(settings.trackpadEnabled, forKey: Key.trackpadEnabled)
+        setBool(settings.trackpadLeftHanded, forKey: Key.handed)
+        setBool(settings.magicMouseEnabled, forKey: Key.magicMouseEnabled)
+        setBool(settings.magicMouseLeftHanded, forKey: Key.magicMouseHanded)
+        synchronize()
     }
 
     func postRuntimeSettingsChanged() {
@@ -92,6 +103,125 @@ final class SettingsStore {
         return nil
     }
 
+    func applicationProfiles(for device: GestureDevice) -> [AppGestureCommands] {
+        let map: [String: AppGestureCommands]
+        switch device {
+        case .trackpad:
+            map = settings.trackpadCommands
+        case .magicMouse:
+            map = settings.magicMouseCommands
+        case .characterRecognition:
+            map = settings.recognitionCommands
+        }
+
+        return map.values.sorted {
+            if $0.application == "All Applications" {
+                return true
+            }
+            if $1.application == "All Applications" {
+                return false
+            }
+            return $0.application.localizedStandardCompare($1.application) == .orderedAscending
+        }
+    }
+
+    func commands(for device: GestureDevice, application: String) -> [GestureCommand] {
+        let appCommands = applicationProfiles(for: device).first { $0.application == application }
+        let commands = appCommands.map { Array($0.gestures.values) } ?? []
+        let catalog = gestureCatalog(for: device)
+        return commands
+            .sorted {
+                let lhs = catalog.firstIndex(of: $0.gesture) ?? Int.max
+                let rhs = catalog.firstIndex(of: $1.gesture) ?? Int.max
+                if lhs == rhs {
+                    return $0.gesture.localizedStandardCompare($1.gesture) == .orderedAscending
+                }
+                return lhs < rhs
+            }
+    }
+
+    func allApplicationCommands(for device: GestureDevice) -> [GestureCommand] {
+        commands(for: device, application: "All Applications")
+    }
+
+    func gestureCatalog(for device: GestureDevice) -> [String] {
+        switch device {
+        case .trackpad:
+            return DefaultsFactory.trackpadGestures
+        case .magicMouse:
+            return DefaultsFactory.magicMouseGestures
+        case .characterRecognition:
+            return []
+        }
+    }
+
+    func availableGestures(for device: GestureDevice, application: String) -> [String] {
+        let assigned = Set(commands(for: device, application: application).map(\.gesture))
+        return gestureCatalog(for: device).filter { !assigned.contains($0) }
+    }
+
+    func availableGestures(for device: GestureDevice) -> [String] {
+        availableGestures(for: device, application: "All Applications")
+    }
+
+    func updateCommand(_ command: GestureCommand, device: GestureDevice, application: String = "All Applications", path: String = "") {
+        switch device {
+        case .trackpad:
+            var app = settings.trackpadCommands[application] ?? AppGestureCommands(dictionary: ["Application": application, "Path": path, "Gestures": []])
+            app.path = path.isEmpty ? app.path : path
+            app.gestures[command.gesture] = command
+            settings.trackpadCommands[application] = app
+            saveCommandMap(settings.trackpadCommands, key: Key.trackpadCommands)
+
+        case .magicMouse:
+            var app = settings.magicMouseCommands[application] ?? AppGestureCommands(dictionary: ["Application": application, "Path": path, "Gestures": []])
+            app.path = path.isEmpty ? app.path : path
+            app.gestures[command.gesture] = command
+            settings.magicMouseCommands[application] = app
+            saveCommandMap(settings.magicMouseCommands, key: Key.magicMouseCommands)
+
+        case .characterRecognition:
+            var app = settings.recognitionCommands[application] ?? AppGestureCommands(dictionary: ["Application": application, "Path": path, "Gestures": []])
+            app.path = path.isEmpty ? app.path : path
+            app.gestures[command.gesture] = command
+            settings.recognitionCommands[application] = app
+            saveCommandMap(settings.recognitionCommands, key: Key.recognitionCommands)
+        }
+    }
+
+    func removeCommand(gesture: String, device: GestureDevice, application: String = "All Applications") {
+        switch device {
+        case .trackpad:
+            settings.trackpadCommands[application]?.gestures.removeValue(forKey: gesture)
+            saveCommandMap(settings.trackpadCommands, key: Key.trackpadCommands)
+        case .magicMouse:
+            settings.magicMouseCommands[application]?.gestures.removeValue(forKey: gesture)
+            saveCommandMap(settings.magicMouseCommands, key: Key.magicMouseCommands)
+        case .characterRecognition:
+            settings.recognitionCommands[application]?.gestures.removeValue(forKey: gesture)
+            saveCommandMap(settings.recognitionCommands, key: Key.recognitionCommands)
+        }
+    }
+
+    func restoreDefaultCommands(for device: GestureDevice) {
+        let defaults = DefaultsFactory.makeDefaultSettings()
+        switch device {
+        case .trackpad:
+            rawSettings[Key.trackpadCommands] = defaults[Key.trackpadCommands]
+            settings.trackpadCommands = Self.commandMap(from: defaults[Key.trackpadCommands])
+            CFPreferencesSetAppValue(Key.trackpadCommands as CFString, rawSettings[Key.trackpadCommands] as CFPropertyList, appID)
+        case .magicMouse:
+            rawSettings[Key.magicMouseCommands] = defaults[Key.magicMouseCommands]
+            settings.magicMouseCommands = Self.commandMap(from: defaults[Key.magicMouseCommands])
+            CFPreferencesSetAppValue(Key.magicMouseCommands as CFString, rawSettings[Key.magicMouseCommands] as CFPropertyList, appID)
+        case .characterRecognition:
+            rawSettings[Key.recognitionCommands] = defaults[Key.recognitionCommands]
+            settings.recognitionCommands = Self.commandMap(from: defaults[Key.recognitionCommands])
+            CFPreferencesSetAppValue(Key.recognitionCommands as CFString, rawSettings[Key.recognitionCommands] as CFPropertyList, appID)
+        }
+        synchronize()
+    }
+
     private func apply(_ dictionary: [String: Any]) {
         settings.isEnabled = Self.bool(dictionary[Key.enabled], default: true)
         settings.showsMenuBarIcon = Self.bool(dictionary[Key.showIcon], default: true)
@@ -112,6 +242,28 @@ final class SettingsStore {
             CFPreferencesSetAppValue(key as CFString, value as CFPropertyList, appID)
         }
         CFPreferencesAppSynchronize(appID)
+    }
+
+    private func setBool(_ value: Bool, forKey key: String) {
+        rawSettings[key] = value ? 1 : 0
+        CFPreferencesSetAppValue(key as CFString, NSNumber(value: value), appID)
+    }
+
+    private func setDouble(_ value: Double, forKey key: String) {
+        rawSettings[key] = value
+        CFPreferencesSetAppValue(key as CFString, NSNumber(value: value), appID)
+    }
+
+    private func synchronize() {
+        CFPreferencesAppSynchronize(appID)
+    }
+
+    private func saveCommandMap(_ map: [String: AppGestureCommands], key: String) {
+        rawSettings[key] = map.values
+            .sorted { $0.application.localizedStandardCompare($1.application) == .orderedAscending }
+            .map { $0.dictionary() }
+        CFPreferencesSetAppValue(key as CFString, rawSettings[key] as CFPropertyList, appID)
+        synchronize()
     }
 
     private static func commandMap(from value: Any?) -> [String: AppGestureCommands] {
@@ -156,6 +308,66 @@ final class SettingsStore {
 }
 
 private enum DefaultsFactory {
+    static let trackpadGestures = [
+        "One-Fix Left-Tap",
+        "One-Fix Right-Tap",
+        "One-Fix One-Slide",
+        "One-Fix Two-Slide-Up",
+        "One-Fix Two-Slide-Down",
+        "One-Fix-Press Two-Slide-Up",
+        "One-Fix-Press Two-Slide-Down",
+        "Two-Fix Index-Double-Tap",
+        "Two-Fix Middle-Double-Tap",
+        "Two-Fix Ring-Double-Tap",
+        "Two-Fix One-Slide-Up",
+        "Two-Fix One-Slide-Down",
+        "Two-Fix One-Slide-Left",
+        "Two-Fix One-Slide-Right",
+        "Three-Finger Tap",
+        "Three-Finger Click",
+        "Three-Finger Pinch-In",
+        "Three-Finger Pinch-Out",
+        "Three-Swipe-Up",
+        "Three-Swipe-Down",
+        "Three-Swipe-Left",
+        "Three-Swipe-Right",
+        "Four-Finger Tap",
+        "Four-Finger Click",
+        "Four-Swipe-Up",
+        "Four-Swipe-Down",
+        "Four-Swipe-Left",
+        "Four-Swipe-Right",
+        "Pinky-To-Index",
+        "Index-To-Pinky",
+        "Left-Side Scroll",
+        "Right-Side Scroll",
+        "All Unassigned Gestures"
+    ]
+
+    static let magicMouseGestures = [
+        "Middle-Fix Index-Near-Tap",
+        "Middle-Fix Index-Far-Tap",
+        "Index-Fix Middle-Near-Tap",
+        "Index-Fix Middle-Far-Tap",
+        "Middle-Fix Index-Slide-Out",
+        "Middle-Fix Index-Slide-In",
+        "Index-Fix Middle-Slide-Out",
+        "Index-Fix Middle-Slide-In",
+        "Three-Swipe-Left",
+        "Three-Swipe-Right",
+        "Three-Swipe-Up",
+        "Three-Swipe-Down",
+        "Three-Finger Click",
+        "V-Shape",
+        "Middle Click",
+        "Two-Fix One-Slide-Up",
+        "Two-Fix One-Slide-Down",
+        "Two-Fix One-Slide-Left",
+        "Two-Fix One-Slide-Right",
+        "Thumb",
+        "All Unassigned Gestures"
+    ]
+
     static func makeDefaultSettings() -> [String: Any] {
         [
             "enAll": 1,

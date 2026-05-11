@@ -3,7 +3,7 @@ import Foundation
 enum LaunchAgentManager {
     private static var plistURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/LaunchAgents/com.jitouch.Jitouch.plist")
+            .appendingPathComponent("Library/LaunchAgents/com.zhuanz.JitouchModern.plist")
     }
 
     static func unload() {

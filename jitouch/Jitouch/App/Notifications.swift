@@ -1,11 +1,11 @@
 import Foundation
 
 extension Notification.Name {
-    static let jitouchPreferencesDidChange = Notification.Name("My Notification")
-    static let jitouchRuntimeDidChange = Notification.Name("My Notification2")
+    static let jitouchPreferencesDidChange = Notification.Name("com.zhuanz.JitouchModern.preferencesDidChange")
+    static let jitouchRuntimeDidChange = Notification.Name("com.zhuanz.JitouchModern.runtimeDidChange")
 }
 
 enum NotificationObject {
-    static let preferencePaneToApp = "com.jitouch.Jitouch.PrefpaneTarget"
-    static let appToPreferencePane = "com.jitouch.Jitouch.PrefpaneTarget2"
+    static let preferencePaneToApp = "com.zhuanz.JitouchModern.preferences"
+    static let appToPreferencePane = "com.zhuanz.JitouchModern.runtime"
 }

@@ -10,6 +10,26 @@ struct GestureCommand: Equatable {
     var openFilePath: String?
     var openURL: String?
 
+    init(
+        gesture: String,
+        command: String,
+        isAction: Bool,
+        modifierFlags: UInt64,
+        keyCode: UInt16,
+        isEnabled: Bool,
+        openFilePath: String?,
+        openURL: String?
+    ) {
+        self.gesture = gesture
+        self.command = command
+        self.isAction = isAction
+        self.modifierFlags = modifierFlags
+        self.keyCode = keyCode
+        self.isEnabled = isEnabled
+        self.openFilePath = openFilePath
+        self.openURL = openURL
+    }
+
     init(dictionary: [String: Any]) {
         gesture = dictionary["Gesture"] as? String ?? ""
         command = dictionary["Command"] as? String ?? "-"
@@ -19,6 +39,24 @@ struct GestureCommand: Equatable {
         isEnabled = Self.number(dictionary["Enable"])?.intValue != 0
         openFilePath = dictionary["OpenFilePath"] as? String
         openURL = dictionary["OpenURL"] as? String
+    }
+
+    func dictionary() -> [String: Any] {
+        var value: [String: Any] = [
+            "Gesture": gesture,
+            "Command": command,
+            "IsAction": isAction,
+            "ModifierFlags": NSNumber(value: modifierFlags),
+            "KeyCode": NSNumber(value: keyCode),
+            "Enable": NSNumber(value: isEnabled)
+        ]
+        if let openFilePath {
+            value["OpenFilePath"] = openFilePath
+        }
+        if let openURL {
+            value["OpenURL"] = openURL
+        }
+        return value
     }
 
     private static func number(_ value: Any?) -> NSNumber? {
@@ -46,6 +84,16 @@ struct AppGestureCommands {
             let command = GestureCommand(dictionary: $0)
             return (command.gesture, command)
         })
+    }
+
+    func dictionary() -> [String: Any] {
+        [
+            "Application": application,
+            "Path": path,
+            "Gestures": gestures.values
+                .sorted { $0.gesture.localizedStandardCompare($1.gesture) == .orderedAscending }
+                .map { $0.dictionary() }
+        ]
     }
 }
 

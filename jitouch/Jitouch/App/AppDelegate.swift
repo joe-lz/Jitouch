@@ -6,6 +6,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var commandDispatcher = CommandDispatcher(settingsStore: settingsStore)
     private lazy var gestureController = GestureController(settingsStore: settingsStore, commandDispatcher: commandDispatcher)
     private lazy var statusBarController = StatusBarController(settingsStore: settingsStore)
+    private lazy var preferencesWindowController: PreferencesWindowController = {
+        let controller = PreferencesWindowController(settingsStore: settingsStore)
+        controller.delegate = self
+        return controller
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         settingsStore.load()
@@ -15,10 +20,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         gestureController.start()
         observeSettingsChanges()
         observeWake()
+        preferencesWindowController.show()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         gestureController.stop()
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        preferencesWindowController.show()
+        return true
     }
 
     private func observeSettingsChanges() {
@@ -70,11 +81,18 @@ extension AppDelegate: StatusBarControllerDelegate {
     }
 
     func statusBarControllerDidOpenPreferences(_ controller: StatusBarController) {
-        PreferencesOpener.openPreferences()
+        preferencesWindowController.show()
     }
 
     func statusBarControllerDidQuit(_ controller: StatusBarController) {
         LaunchAgentManager.unload()
         NSApp.terminate(nil)
+    }
+}
+
+extension AppDelegate: PreferencesWindowControllerDelegate {
+    func preferencesWindowControllerDidChangeSettings(_ controller: PreferencesWindowController) {
+        statusBarController.reload()
+        gestureController.reload()
     }
 }

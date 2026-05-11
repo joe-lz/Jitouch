@@ -14,11 +14,11 @@
 		A84E89021081B2F30047B86A /* jitouchicon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A84E89011081B2F30047B86A /* jitouchicon.icns */; };
 		A8DB0A4A10842620000A2A08 /* logosmall.png in Resources */ = {isa = PBXBuildFile; fileRef = A8DB0A4910842620000A2A08 /* logosmall.png */; };
 		A8EB72071085318200563ED4 /* logosmalloff.png in Resources */ = {isa = PBXBuildFile; fileRef = A8EB72061085318200563ED4 /* logosmalloff.png */; };
+		D00100000000000000000014 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D00400000000000000000001 /* Localizable.strings */; };
 		D00100000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000001 /* main.swift */; };
 		D00100000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000002 /* AppDelegate.swift */; };
 		D00100000000000000000003 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000003 /* Notifications.swift */; };
 		D00100000000000000000004 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000004 /* LaunchAgentManager.swift */; };
-		D00100000000000000000005 /* PreferencesOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000005 /* PreferencesOpener.swift */; };
 		D00100000000000000000006 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000006 /* StatusBarController.swift */; };
 		D00100000000000000000007 /* JitouchSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000007 /* JitouchSettings.swift */; };
 		D00100000000000000000008 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000008 /* SettingsStore.swift */; };
@@ -32,6 +32,7 @@
 		D00100000000000000000010 /* KeySimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000010 /* KeySimulator.swift */; };
 		D00100000000000000000011 /* AccessibilityWindowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000011 /* AccessibilityWindowService.swift */; };
 		D00100000000000000000012 /* CommandDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000012 /* CommandDispatcher.swift */; };
+		D00100000000000000000013 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000013 /* PreferencesWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,7 +63,6 @@
 		D00200000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDelegate.swift; sourceTree = "<group>"; };
 		D00200000000000000000003 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/Notifications.swift; sourceTree = "<group>"; };
 		D00200000000000000000004 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/LaunchAgentManager.swift; sourceTree = "<group>"; };
-		D00200000000000000000005 /* PreferencesOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/PreferencesOpener.swift; sourceTree = "<group>"; };
 		D00200000000000000000006 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/StatusBarController.swift; sourceTree = "<group>"; };
 		D00200000000000000000007 /* JitouchSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/JitouchSettings.swift; sourceTree = "<group>"; };
 		D00200000000000000000008 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/SettingsStore.swift; sourceTree = "<group>"; };
@@ -76,6 +76,9 @@
 		D00200000000000000000010 /* KeySimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/KeySimulator.swift; sourceTree = "<group>"; };
 		D00200000000000000000011 /* AccessibilityWindowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/AccessibilityWindowService.swift; sourceTree = "<group>"; };
 		D00200000000000000000012 /* CommandDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/CommandDispatcher.swift; sourceTree = "<group>"; };
+		D00200000000000000000013 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/PreferencesWindowController.swift; sourceTree = "<group>"; };
+		D00300000000000000000001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D00300000000000000000002 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,8 +101,8 @@
 				D00200000000000000000002 /* AppDelegate.swift */,
 				D00200000000000000000003 /* Notifications.swift */,
 				D00200000000000000000004 /* LaunchAgentManager.swift */,
-				D00200000000000000000005 /* PreferencesOpener.swift */,
 				D00200000000000000000006 /* StatusBarController.swift */,
+				D00200000000000000000013 /* PreferencesWindowController.swift */,
 				D00200000000000000000007 /* JitouchSettings.swift */,
 				D00200000000000000000008 /* SettingsStore.swift */,
 				D00200000000000000000009 /* GestureTypes.swift */,
@@ -148,6 +151,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D00400000000000000000001 /* Localizable.strings */,
 				A85BFEC010B8AEFF00201BF7 /* tab.png */,
 				A80A939A10923DC300F92D3F /* move.png */,
 				A8D4973610918F7E005C3998 /* resize.png */,
@@ -220,10 +224,11 @@
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
-			knownRegions = (
-				Base,
-				en,
-			);
+				knownRegions = (
+					Base,
+					en,
+					"zh-Hans",
+				);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* Jitouch */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -238,6 +243,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D00100000000000000000014 /* Localizable.strings in Resources */,
 				A84E89021081B2F30047B86A /* jitouchicon.icns in Resources */,
 				A8DB0A4A10842620000A2A08 /* logosmall.png in Resources */,
 				A8EB72071085318200563ED4 /* logosmalloff.png in Resources */,
@@ -257,8 +263,8 @@
 				D00100000000000000000002 /* AppDelegate.swift in Sources */,
 				D00100000000000000000003 /* Notifications.swift in Sources */,
 				D00100000000000000000004 /* LaunchAgentManager.swift in Sources */,
-				D00100000000000000000005 /* PreferencesOpener.swift in Sources */,
 				D00100000000000000000006 /* StatusBarController.swift in Sources */,
+				D00100000000000000000013 /* PreferencesWindowController.swift in Sources */,
 				D00100000000000000000007 /* JitouchSettings.swift in Sources */,
 				D00100000000000000000008 /* SettingsStore.swift in Sources */,
 				D00100000000000000000009 /* GestureTypes.swift in Sources */,
@@ -282,6 +288,15 @@
 			children = (
 			);
 			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+		D00400000000000000000001 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D00300000000000000000001 /* en */,
+				D00300000000000000000002 /* zh-Hans */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -316,8 +331,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = "2.82.1";
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jitouch.Jitouch;
-				PRODUCT_NAME = Jitouch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhuanz.JitouchModern;
+				PRODUCT_NAME = "Jitouch Modern";
 				SWIFT_VERSION = 5.0;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -349,8 +364,8 @@
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = "2.82.1";
-				PRODUCT_BUNDLE_IDENTIFIER = com.jitouch.Jitouch;
-				PRODUCT_NAME = Jitouch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhuanz.JitouchModern;
+				PRODUCT_NAME = "Jitouch Modern";
 				SWIFT_VERSION = 5.0;
 				PROVISIONING_PROFILE_SPECIFIER = "Jitouch Distribution";
 				STRIP_INSTALLED_PRODUCT = YES;

@@ -1097,15 +1097,12 @@ struct AddGestureSheet: View {
             }
 
             settingsRow(L("Gesture"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
-                menuControl(title: model.addGesture) {
-                    ForEach(model.availableAddGestures(), id: \.self) { gesture in
-                        Button {
-                            model.addGesture = gesture
-                        } label: {
-                            menuItemLabel(title: gesture, isSelected: gesture == model.addGesture)
-                        }
-                    }
-                }
+                AddGesturePicker(
+                    selection: $model.addGesture,
+                    gestures: model.availableAddGestures(),
+                    device: model.selectedDevice,
+                    width: controlWidth
+                )
             }
 
             settingsRow(L("Type"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
@@ -1250,6 +1247,95 @@ struct AddGestureSheet: View {
             .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct AddGesturePicker: View {
+    @Binding var selection: String
+    let gestures: [String]
+    let device: GestureDevice
+    let width: CGFloat
+    @State private var isShowingPopover = false
+    @State private var hoveredGesture: String?
+
+    var body: some View {
+        Button {
+            hoveredGesture = selection.isEmpty ? gestures.first : selection
+            isShowingPopover = true
+        } label: {
+            HStack(spacing: 8) {
+                Text(selection.isEmpty ? "-" : selection)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .frame(width: width, height: 30)
+            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isShowingPopover, arrowEdge: .trailing) {
+            HStack(spacing: 14) {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 2) {
+                        ForEach(gestures, id: \.self) { gesture in
+                            gestureRow(gesture)
+                        }
+                    }
+                    .padding(6)
+                }
+                .frame(width: 250, height: 260)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                GestureAnimationPreview(gesture: previewGesture, device: device)
+                    .frame(width: 220)
+            }
+            .padding(12)
+            .onAppear {
+                hoveredGesture = selection.isEmpty ? gestures.first : selection
+            }
+        }
+    }
+
+    private func gestureRow(_ gesture: String) -> some View {
+        Button {
+            selection = gesture
+            hoveredGesture = gesture
+            isShowingPopover = false
+        } label: {
+            HStack(spacing: 8) {
+                Text(gesture == selection ? "✓" : " ")
+                    .font(.body.weight(.semibold))
+                    .frame(width: 14)
+                Text(gesture)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(gesture == previewGesture ? Color.accentColor.opacity(0.16) : Color.clear)
+            }
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering in
+            if isHovering {
+                hoveredGesture = gesture
+            }
+        }
+    }
+
+    private var previewGesture: String {
+        if let hoveredGesture, hoveredGesture.isEmpty == false {
+            return hoveredGesture
+        }
+        if selection.isEmpty == false {
+            return selection
+        }
+        return gestures.first ?? ""
     }
 }
 

@@ -50,13 +50,15 @@ final class PreferencesWindowController: NSWindowController {
 @MainActor
 final class PreferencesViewModel: ObservableObject {
     enum Tab: String, CaseIterable, Identifiable {
-        case gestures
+        case trackpad
+        case magicMouse
         case general
 
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .gestures: L("Gestures")
+            case .trackpad: L("Trackpad")
+            case .magicMouse: L("Magic Mouse")
             case .general: L("General")
             }
         }
@@ -80,11 +82,18 @@ final class PreferencesViewModel: ObservableObject {
         var id: String { command.gesture }
     }
 
+    struct ApplicationOption: Identifiable {
+        var application: String
+        var title: String
+        var icon: NSImage?
+
+        var id: String { application }
+    }
+
     private let settingsStore: SettingsStore
     private let onChange: () -> Void
 
-    @Published var selectedTab: Tab = .gestures
-    @Published var selectedDevice: GestureDevice = .trackpad
+    @Published var selectedTab: Tab = .trackpad
     @Published var selectedApplication = "All Applications"
     @Published var selectedGesture: String?
     @Published var isShowingAddSheet = false
@@ -100,6 +109,7 @@ final class PreferencesViewModel: ObservableObject {
     @Published var addShortcutKeyCode: UInt16 = 0
     @Published var addEnabled = true
     @Published private var temporaryApplicationPaths: [String: String] = [:]
+    @Published private var installedApplicationPaths: [String: String] = [:]
 
     let commands = [
         "-",
@@ -147,7 +157,19 @@ final class PreferencesViewModel: ObservableObject {
     init(settingsStore: SettingsStore, onChange: @escaping () -> Void) {
         self.settingsStore = settingsStore
         self.onChange = onChange
+        refreshInstalledApplications()
         reload()
+    }
+
+    var selectedDevice: GestureDevice {
+        switch selectedTab {
+        case .trackpad:
+            return .trackpad
+        case .magicMouse:
+            return .magicMouse
+        case .general:
+            return .trackpad
+        }
     }
 
     var deviceOptions: [GestureDevice] {
@@ -160,6 +182,44 @@ final class PreferencesViewModel: ObservableObject {
 
     var applicationOptions: [String] {
         applicationProfiles.map { displayName(for: $0.application) }
+    }
+
+    var installedApplicationOptions: [String] {
+        Set(installedApplicationPaths.keys)
+            .union(applicationProfiles.map(\.application))
+            .filter { $0 != "All Applications" }
+            .sorted { lhs, rhs in
+                lhs.localizedStandardCompare(rhs) == .orderedAscending
+            }
+    }
+
+    var addApplicationOptions: [ApplicationOption] {
+        var options: [ApplicationOption] = [
+            ApplicationOption(
+                application: "All Applications",
+                title: L("All Applications"),
+                icon: allApplicationsIcon()
+            )
+        ]
+
+        for application in installedApplicationOptions {
+            options.append(
+                ApplicationOption(
+                    application: application,
+                    title: application,
+                    icon: icon(for: application)
+                )
+            )
+        }
+
+        options.append(
+            ApplicationOption(
+                application: L("Other..."),
+                title: L("Other..."),
+                icon: nil
+            )
+        )
+        return options
     }
 
     var commandRows: [CommandRow] {
@@ -181,6 +241,7 @@ final class PreferencesViewModel: ObservableObject {
     }
 
     func reload() {
+        refreshInstalledApplications()
         generalSettings = settingsStore.settings
         if applicationProfiles.contains(where: { $0.application == selectedApplication }) == false {
             selectedApplication = "All Applications"
@@ -188,7 +249,7 @@ final class PreferencesViewModel: ObservableObject {
     }
 
     func selectDevice(_ device: GestureDevice) {
-        selectedDevice = device
+        selectedTab = device == .trackpad ? .trackpad : .magicMouse
         selectedApplication = "All Applications"
         selectedGesture = nil
     }
@@ -210,15 +271,11 @@ final class PreferencesViewModel: ObservableObject {
         addGesture = available.first ?? ""
     }
 
-    func addApplicationOptions() -> [String] {
-        applicationOptions + [L("Other...")]
-    }
-
     func handleAddApplicationSelection(_ value: String) {
         if value == L("Other...") {
             chooseApplicationForAddSheet()
         } else {
-            addApplication = normalizedApplicationName(value)
+            addApplication = value
             refreshAddGesture()
         }
     }
@@ -285,6 +342,9 @@ final class PreferencesViewModel: ObservableObject {
         if let temporaryPath = temporaryApplicationPaths[application] {
             return temporaryPath
         }
+        if let installedPath = installedApplicationPaths[application] {
+            return installedPath
+        }
         return applicationProfiles.first { $0.application == application }?.path ?? ""
     }
 
@@ -303,8 +363,63 @@ final class PreferencesViewModel: ObservableObject {
         }
         let name = url.deletingPathExtension().lastPathComponent
         temporaryApplicationPaths[name] = url.path
+        installedApplicationPaths[name] = url.path
         addApplication = name
         refreshAddGesture()
+    }
+
+    private func refreshInstalledApplications() {
+        installedApplicationPaths = Self.scanInstalledApplications()
+    }
+
+    private func icon(for application: String) -> NSImage {
+        let path = path(for: application)
+        if path.isEmpty == false {
+            return Self.normalizedApplicationIcon(NSWorkspace.shared.icon(forFile: path))
+        }
+        return Self.normalizedApplicationIcon(NSWorkspace.shared.icon(for: UTType.application))
+    }
+
+    private func allApplicationsIcon() -> NSImage {
+        let icon = NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: nil)
+            ?? NSWorkspace.shared.icon(for: UTType.application)
+        return Self.normalizedApplicationIcon(icon)
+    }
+
+    private static func normalizedApplicationIcon(_ icon: NSImage) -> NSImage {
+        let image = icon.copy() as? NSImage ?? icon
+        image.size = NSSize(width: 16, height: 16)
+        return image
+    }
+
+    private static func scanInstalledApplications() -> [String: String] {
+        let fileManager = FileManager.default
+        let searchDirectories = [
+            "/Applications",
+            "/System/Applications",
+            fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path
+        ]
+
+        var results: [String: String] = [:]
+        for directory in searchDirectories {
+            guard let enumerator = fileManager.enumerator(
+                at: URL(fileURLWithPath: directory),
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            ) else {
+                continue
+            }
+
+            for case let url as URL in enumerator {
+                guard url.pathExtension == "app" else { continue }
+                let name = url.deletingPathExtension().lastPathComponent
+                if results[name] == nil {
+                    results[name] = url.path
+                }
+            }
+        }
+
+        return results
     }
 
     private func finishSettingsChange() {
@@ -328,7 +443,10 @@ struct PreferencesRootView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
         } detail: {
             switch model.selectedTab {
-            case .gestures:
+            case .trackpad:
+                GestureSettingsView(model: model)
+                    .padding(24)
+            case .magicMouse:
                 GestureSettingsView(model: model)
                     .padding(24)
             case .general:
@@ -346,8 +464,10 @@ struct PreferencesRootView: View {
 
     private func sidebarIcon(for tab: PreferencesViewModel.Tab) -> String {
         switch tab {
-        case .gestures:
+        case .trackpad:
             return "hand.tap"
+        case .magicMouse:
+            return "magicmouse"
         case .general:
             return "gearshape"
         }
@@ -359,28 +479,15 @@ struct GestureSettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Picker("", selection: Binding(
-                    get: { model.selectedDevice },
-                    set: { model.selectDevice($0) }
-                )) {
-                    ForEach(model.deviceOptions, id: \.self) { device in
-                        Text(deviceTitle(device)).tag(device)
-                    }
+            Picker("", selection: Binding(
+                get: { model.displayName(for: model.selectedApplication) },
+                set: { model.selectedApplication = model.normalizedApplicationName($0) }
+            )) {
+                ForEach(model.applicationOptions, id: \.self) { app in
+                    Text(app).tag(app)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 230)
-
-                Picker("", selection: Binding(
-                    get: { model.displayName(for: model.selectedApplication) },
-                    set: { model.selectedApplication = model.normalizedApplicationName($0) }
-                )) {
-                    ForEach(model.applicationOptions, id: \.self) { app in
-                        Text(app).tag(app)
-                    }
-                }
-                .frame(width: 240)
             }
+            .frame(width: 240)
 
             commandHeader
 
@@ -489,64 +596,68 @@ struct CommandRowView: View {
 struct AddGestureSheet: View {
     @ObservedObject var model: PreferencesViewModel
     @Environment(\.dismiss) private var dismiss
+    private let labelWidth: CGFloat = 150
+    private let columnSpacing: CGFloat = 16
+    private let controlWidth: CGFloat = 320
+    private var formWidth: CGFloat { labelWidth + columnSpacing + controlWidth }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(L("Add Gesture"))
                 .font(.title2.weight(.semibold))
+                .frame(width: formWidth, alignment: .leading)
 
-            settingsRow(L("Application")) {
-                Picker("", selection: Binding(
-                    get: { model.displayName(for: model.addApplication) },
-                    set: { model.handleAddApplicationSelection($0) }
-                )) {
-                    ForEach(model.addApplicationOptions(), id: \.self) { app in
-                        Text(app).tag(app)
+            settingsRow(L("Application"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
+                menuControl(title: selectedApplicationTitle, icon: selectedApplicationIcon) {
+                    if let allApplications = model.addApplicationOptions.first {
+                        applicationMenuButton(allApplications)
+                        Divider()
+                    }
+                    ForEach(model.addApplicationOptions.dropFirst()) { app in
+                        applicationMenuButton(app)
                     }
                 }
-                .frame(width: 300)
             }
 
-            settingsRow(L("Gesture")) {
-                Picker("", selection: $model.addGesture) {
+            settingsRow(L("Gesture"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
+                menuControl(title: model.addGesture) {
                     ForEach(model.availableAddGestures(), id: \.self) { gesture in
-                        Text(gesture).tag(gesture)
+                        Button(gesture) { model.addGesture = gesture }
                     }
                 }
-                .frame(width: 300)
             }
 
-            settingsRow(L("Type")) {
-                Picker("", selection: $model.addMode) {
-                    ForEach(PreferencesViewModel.AddMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+            settingsRow(L("Type"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
+                addModeControl
+            }
+
+            if model.addMode == .action {
+                settingsRow(L("Command"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
+                    menuControl(title: model.addCommand) {
+                        ForEach(model.commands, id: \.self) { command in
+                            Button(command) { model.addCommand = command }
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 300)
             }
 
-            settingsRow(L("Command")) {
-                Picker("", selection: $model.addCommand) {
-                    ForEach(model.commands, id: \.self) { command in
-                        Text(command).tag(command)
-                    }
+            if model.addMode == .shortcut {
+                settingsRow(L("Keyboard Shortcut"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
+                    ShortcutRecorder(
+                        text: $model.addShortcutText,
+                        modifierFlags: $model.addShortcutFlags,
+                        keyCode: $model.addShortcutKeyCode,
+                        shouldBecomeFirstResponder: model.addMode == .shortcut
+                    )
+                    .frame(width: controlWidth, height: 30)
                 }
-                .frame(width: 300)
-                .disabled(model.addMode != .action)
             }
 
-            settingsRow(L("Keyboard Shortcut")) {
-                ShortcutRecorder(
-                    text: $model.addShortcutText,
-                    modifierFlags: $model.addShortcutFlags,
-                    keyCode: $model.addShortcutKeyCode
-                )
-                .frame(width: 300, height: 28)
-                .disabled(model.addMode != .shortcut)
+            settingsRow(L("Enabled"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
+                Toggle("", isOn: $model.addEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
             }
-
-            Toggle(L("Enabled"), isOn: $model.addEnabled)
 
             HStack {
                 Button(L("Cancel")) { dismiss() }
@@ -558,10 +669,90 @@ struct AddGestureSheet: View {
                 .disabled(model.addGesture.isEmpty || (model.addMode == .shortcut && model.addShortcutText.isEmpty))
                 .liquidGlassButton(prominent: true)
             }
+            .frame(width: formWidth, alignment: .trailing)
         }
         .padding(28)
-        .frame(width: 560)
+        .frame(width: formWidth + 56)
         .liquidGlassCard()
+    }
+
+    private var selectedApplicationOption: PreferencesViewModel.ApplicationOption? {
+        model.addApplicationOptions.first { $0.application == model.addApplication }
+    }
+
+    private var selectedApplicationTitle: String {
+        selectedApplicationOption?.title ?? model.addApplication
+    }
+
+    private var selectedApplicationIcon: NSImage? {
+        selectedApplicationOption?.icon
+    }
+
+    private var addModeControl: some View {
+        HStack(spacing: 0) {
+            ForEach(PreferencesViewModel.AddMode.allCases) { mode in
+                Button {
+                    model.addMode = mode
+                } label: {
+                    Text(mode.title)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(model.addMode == mode ? Color.accentColor : Color.clear)
+                        }
+                        .foregroundStyle(model.addMode == mode ? Color.white : Color.primary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .frame(width: controlWidth)
+        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    private func applicationMenuButton(_ app: PreferencesViewModel.ApplicationOption) -> some View {
+        Button {
+            model.handleAddApplicationSelection(app.application)
+        } label: {
+            Label {
+                Text(app.title)
+            } icon: {
+                if let icon = app.icon {
+                    Image(nsImage: icon)
+                }
+            }
+        }
+    }
+
+    private func menuControl<Content: View>(
+        title: String,
+        icon: NSImage? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Menu {
+            content()
+        } label: {
+            HStack(spacing: 8) {
+                if let icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                }
+                Text(title.isEmpty ? "-" : title)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .frame(width: controlWidth, height: 30)
+            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -639,12 +830,14 @@ struct ShortcutRecorder: NSViewRepresentable {
     @Binding var text: String
     @Binding var modifierFlags: UInt64
     @Binding var keyCode: UInt16
+    var shouldBecomeFirstResponder: Bool
 
     func makeNSView(context: Context) -> ShortcutRecorderField {
         let field = ShortcutRecorderField()
         field.placeholderString = L("Press shortcut")
-        field.isEditable = false
-        field.isSelectable = false
+        field.isEditable = true
+        field.isSelectable = true
+        field.focusRingType = .default
         field.onChange = { text, flags, keyCode in
             self.text = text
             self.modifierFlags = flags
@@ -657,6 +850,11 @@ struct ShortcutRecorder: NSViewRepresentable {
         if nsView.stringValue != text {
             nsView.stringValue = text
         }
+        if shouldBecomeFirstResponder, nsView.window?.firstResponder !== nsView.currentEditor() {
+            DispatchQueue.main.async {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        }
     }
 }
 
@@ -664,6 +862,17 @@ final class ShortcutRecorderField: NSTextField {
     var onChange: ((String, UInt64, UInt16) -> Void)?
 
     override var acceptsFirstResponder: Bool { true }
+
+    override func becomeFirstResponder() -> Bool {
+        let didBecomeFirstResponder = super.becomeFirstResponder()
+        currentEditor()?.selectedRange = NSRange(location: stringValue.count, length: 0)
+        return didBecomeFirstResponder
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        super.mouseDown(with: event)
+    }
 
     override func keyDown(with event: NSEvent) {
         let flags = UInt64(event.modifierFlags.intersection(.deviceIndependentFlagsMask).rawValue)
@@ -693,12 +902,19 @@ private func deviceTitle(_ device: GestureDevice) -> String {
     }
 }
 
-private func settingsRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
-    HStack {
+private func settingsRow<Content: View>(
+    _ label: String,
+    labelWidth: CGFloat = 150,
+    controlWidth: CGFloat? = nil,
+    spacing: CGFloat = 8,
+    @ViewBuilder content: () -> Content
+) -> some View {
+    HStack(spacing: spacing) {
         Text(label)
             .font(.body.weight(.semibold))
-            .frame(width: 150, alignment: .leading)
+            .frame(width: labelWidth, alignment: .leading)
         content()
+            .frame(width: controlWidth, alignment: .trailing)
     }
 }
 

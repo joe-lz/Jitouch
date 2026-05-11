@@ -11,8 +11,8 @@
 "Command" = "命令";
 "Delete" = "删除";
 "Enable Jitouch" = "启用 Jitouch";
-"Enable Magic Mouse gestures" = "启用 Magic Mouse 手势";
-"Enable trackpad gestures" = "启用触控板手势";
+"Enable Magic Mouse gestures" = "启用妙控鼠标手势";
+"Enable trackpad gestures" = "启用妙控板手势";
 "Enabled" = "启用";
 "General" = "通用";
 "Gesture" = "手势";
@@ -20,7 +20,7 @@
 "Handedness" = "惯用手";
 "Jitouch Gesture Settings" = "Jitouch 手势设置";
 "Left" = "左手";
-"Magic Mouse" = "Magic Mouse";
+"Magic Mouse" = "妙控鼠标";
 "OK" = "确定";
 "On" = "启用";
 "Other..." = "其他...";
@@ -31,8 +31,8 @@
 "Save" = "保存";
 "Sensitivity" = "灵敏度";
 "Show menu bar icon" = "显示菜单栏图标";
-"Trackpad" = "触控板";
+"Trackpad" = "妙控板";
 "Type" = "类型";
 "Your current %@ gesture settings will be deleted." = "当前 %@ 手势设置将被删除。";
 "Keyboard Shortcut" = "键盘快捷键";
-"trackpad" = "触控板";
+"trackpad" = "妙控板";

@@ -816,8 +816,8 @@ struct GeneralSettingsView: View {
     private let columnSpacing: CGFloat = 24
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            section(L("General")) {
+        Form {
+            Section {
                 switchRow(L("Enable Jitouch"), isOn: binding(\.isEnabled))
                 switchRow(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
                 slider(L("Click speed"), value: Binding(
@@ -828,40 +828,33 @@ struct GeneralSettingsView: View {
                     get: { model.generalSettings.sensitivity },
                     set: { newValue in model.updateGeneral { $0.sensitivity = newValue } }
                 ), range: 1...8)
+            } header: {
+                Text(L("General"))
             }
 
-            section(L("Trackpad")) {
+            Section {
                 switchRow(L("Enable trackpad gestures"), isOn: binding(\.trackpadEnabled))
-                generalRow(L("Handedness")) {
-                    Picker("", selection: Binding(
-                        get: { model.generalSettings.trackpadLeftHanded },
-                        set: { value in model.updateGeneral { $0.trackpadLeftHanded = value } }
-                    )) {
-                        Text(L("Right")).tag(false)
-                        Text(L("Left")).tag(true)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: controlWidth)
-                }
+                handednessRow(Binding(
+                    get: { model.generalSettings.trackpadLeftHanded },
+                    set: { value in model.updateGeneral { $0.trackpadLeftHanded = value } }
+                ))
+            } header: {
+                Text(L("Trackpad"))
             }
 
-            section(L("Magic Mouse")) {
+            Section {
                 switchRow(L("Enable Magic Mouse gestures"), isOn: binding(\.magicMouseEnabled))
-                generalRow(L("Handedness")) {
-                    Picker("", selection: Binding(
-                        get: { model.generalSettings.magicMouseLeftHanded },
-                        set: { value in model.updateGeneral { $0.magicMouseLeftHanded = value } }
-                    )) {
-                        Text(L("Right")).tag(false)
-                        Text(L("Left")).tag(true)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: controlWidth)
-                }
+                handednessRow(Binding(
+                    get: { model.generalSettings.magicMouseLeftHanded },
+                    set: { value in model.updateGeneral { $0.magicMouseLeftHanded = value } }
+                ))
+            } header: {
+                Text(L("Magic Mouse"))
             }
         }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
@@ -891,6 +884,46 @@ struct GeneralSettingsView: View {
         }
     }
 
+    private func handednessRow(_ selection: Binding<Bool>) -> some View {
+        generalRow(L("Handedness")) {
+            HStack {
+                Spacer(minLength: 0)
+                handednessControl(selection)
+            }
+            .frame(width: controlWidth, alignment: .trailing)
+        }
+    }
+
+    private func handednessControl(_ selection: Binding<Bool>) -> some View {
+        HStack(spacing: 0) {
+            handednessButton(title: L("Right"), isSelected: selection.wrappedValue == false) {
+                selection.wrappedValue = false
+            }
+            handednessButton(title: L("Left"), isSelected: selection.wrappedValue == true) {
+                selection.wrappedValue = true
+            }
+        }
+        .padding(2)
+        .frame(width: controlWidth)
+        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    private func handednessButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.body.weight(.medium))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5)
+                .background {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isSelected ? Color.accentColor : Color.clear)
+                }
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func generalRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack(spacing: columnSpacing) {
             Text(label)
@@ -902,14 +935,6 @@ struct GeneralSettingsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.headline)
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.bottom, 4)
-    }
 }
 
 struct ShortcutRecorder: NSViewRepresentable {

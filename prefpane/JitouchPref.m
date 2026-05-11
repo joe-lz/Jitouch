@@ -125,23 +125,8 @@ static CGEventRef CGEventCallback(CGEventTapProxy proxy, CGEventType type, CGEve
 }
 
 - (void)removeJitouchFromLoginItems{
-    LSSharedFileListRef loginListRef = LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
-    if (loginListRef) {
-        // delete all shortcuts to jitouch in the login items
-        UInt32 seedValue;
-        NSArray *loginItemsArray = (NSArray *)LSSharedFileListCopySnapshot(loginListRef, &seedValue);
-        for (id item in loginItemsArray) {
-            LSSharedFileListItemRef itemRef = (LSSharedFileListItemRef)item;
-            CFURLRef thePath;
-            if (LSSharedFileListItemResolve(itemRef, 0, (CFURLRef*) &thePath, NULL) == noErr) {
-                NSRange range = [[(NSURL*)thePath path] rangeOfString:@"Jitouch"];
-                if (range.location != NSNotFound)
-                    LSSharedFileListItemRemove(loginListRef, itemRef);
-            }
-        }
-        [loginItemsArray release];
-        CFRelease(loginListRef);
-    }
+    // Jitouch now uses LaunchAgent exclusively, so legacy Login Items are no
+    // longer modified here.
 }
 
 - (NSString *)generateJitouchLaunchAgent {

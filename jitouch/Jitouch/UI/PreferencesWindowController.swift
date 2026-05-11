@@ -582,8 +582,35 @@ struct PreferencesRootView: View {
     }
 }
 
+private struct CommandSectionFramePreferenceKey: PreferenceKey {
+    static var defaultValue: CGRect = .null
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if value.isNull {
+            value = next
+        } else if next.isNull == false {
+            value = value.union(next)
+        }
+    }
+}
+
+private extension View {
+    func sectionFrameProbe() -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: CommandSectionFramePreferenceKey.self,
+                    value: proxy.frame(in: .named("CommandForm"))
+                )
+            }
+        }
+    }
+}
+
 struct GestureSettingsView: View {
     @ObservedObject var model: PreferencesViewModel
+    @State private var commandSectionFrame: CGRect = .null
 
     var body: some View {
         applicationTabs
@@ -633,27 +660,63 @@ struct GestureSettingsView: View {
     }
 
     private var commandForm: some View {
-        Form {
-            Section {
-                commandHeader
-                    .listRowSeparator(.hidden)
-                ForEach(model.commandRows) { row in
-                    CommandRowView(model: model, row: row, isSelected: row.id == model.selectedGesture)
-                        .listRowBackground(Color.clear)
+        GeometryReader { proxy in
+            ZStack(alignment: .topLeading) {
+                Form {
+                    Section {
+                        commandHeader
+                            .sectionFrameProbe()
+                            .listRowSeparator(.hidden)
+                        ForEach(model.commandRows) { row in
+                            CommandRowView(model: model, row: row, isSelected: row.id == model.selectedGesture)
+                                .sectionFrameProbe()
+                                .listRowBackground(Color.clear)
+                        }
+                    } header: {
+                        Text(deviceTitle(model.selectedDevice))
+                    }
                 }
-            } header: {
-                Text(deviceTitle(model.selectedDevice))
+                .formStyle(.grouped)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .background {
+                    SelectedGestureShortcutCapture(isActive: model.selectedGesture != nil && model.isShowingAddSheet == false) { text, flags, keyCode in
+                        model.updateSelectedCommandShortcut(text: text, modifierFlags: flags, keyCode: keyCode)
+                    }
+                    .frame(width: 0, height: 0)
+                }
+
+                if model.selectedGesture != nil, commandSectionFrame.isNull == false {
+                    outsideSectionTapOverlay(containerSize: proxy.size)
+                }
+            }
+            .coordinateSpace(name: "CommandForm")
+            .onPreferenceChange(CommandSectionFramePreferenceKey.self) { frame in
+                commandSectionFrame = frame
             }
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
-        .background {
-            SelectedGestureShortcutCapture(isActive: model.selectedGesture != nil && model.isShowingAddSheet == false) { text, flags, keyCode in
-                model.updateSelectedCommandShortcut(text: text, modifierFlags: flags, keyCode: keyCode)
-            }
-            .frame(width: 0, height: 0)
+    }
+
+    private func outsideSectionTapOverlay(containerSize: CGSize) -> some View {
+        let containerFrame = CGRect(origin: .zero, size: containerSize)
+        let frame = commandSectionFrame.intersection(containerFrame)
+
+        return ZStack(alignment: .topLeading) {
+            clearSelectionArea(CGRect(x: 0, y: 0, width: containerSize.width, height: max(0, frame.minY)))
+            clearSelectionArea(CGRect(x: 0, y: frame.maxY, width: containerSize.width, height: max(0, containerSize.height - frame.maxY)))
+            clearSelectionArea(CGRect(x: 0, y: frame.minY, width: max(0, frame.minX), height: frame.height))
+            clearSelectionArea(CGRect(x: frame.maxX, y: frame.minY, width: max(0, containerSize.width - frame.maxX), height: frame.height))
         }
+    }
+
+    private func clearSelectionArea(_ frame: CGRect) -> some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .frame(width: frame.width, height: frame.height)
+            .position(x: frame.midX, y: frame.midY)
+            .onTapGesture {
+                model.selectedGesture = nil
+            }
     }
 
     private var commandHeader: some View {
@@ -731,7 +794,7 @@ struct CommandRowView: View {
                 .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
         }
         .onTapGesture {
-            model.selectedGesture = row.id
+            model.selectedGesture = isSelected ? nil : row.id
         }
     }
 

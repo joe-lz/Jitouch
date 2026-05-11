@@ -522,13 +522,54 @@ struct GestureSettingsView: View {
     @ObservedObject var model: PreferencesViewModel
 
     var body: some View {
-        Form {
-            Section {
-                applicationSegmentedPicker
-            } header: {
-                Text(L("Application"))
+        applicationTabs
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button(L("Restore Defaults")) { model.isShowingRestoreAlert = true }
+                    Button(L("Delete")) { model.deleteSelectedCommand() }
+                        .disabled(!model.canDelete)
+                    Button(L("Add")) { model.beginAdd() }
+                        .disabled(!model.canAdd)
+                        .buttonStyle(.borderedProminent)
+                }
             }
+            .sheet(isPresented: $model.isShowingAddSheet) {
+                AddGestureSheet(model: model)
+            }
+            .alert(L("Restore default settings?"), isPresented: $model.isShowingRestoreAlert) {
+                Button(L("Cancel"), role: .cancel) {}
+                Button(L("OK"), role: .destructive) { model.restoreDefaults() }
+            } message: {
+                Text(String(format: L("Your current %@ gesture settings will be deleted."), deviceTitle(model.selectedDevice)))
+            }
+    }
 
+    private var applicationTabs: some View {
+        TabView(selection: selectedApplication) {
+            ForEach(model.applicationOptions, id: \.self) { app in
+                commandForm
+                    .tabItem {
+                        Text(app)
+                    }
+                    .tag(model.normalizedApplicationName(app))
+            }
+        }
+        .tabViewStyle(.automatic)
+        .background(Color.clear)
+    }
+
+    private var selectedApplication: Binding<String> {
+        Binding(
+            get: { model.selectedApplication },
+            set: { application in
+                model.selectedApplication = application
+                model.selectedGesture = nil
+            }
+        )
+    }
+
+    private var commandForm: some View {
+        Form {
             Section {
                 commandHeader
                     .listRowSeparator(.hidden)
@@ -545,56 +586,6 @@ struct GestureSettingsView: View {
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
         .background(Color.clear)
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(L("Restore Defaults")) { model.isShowingRestoreAlert = true }
-                Button(L("Delete")) { model.deleteSelectedCommand() }
-                    .disabled(!model.canDelete)
-                Button(L("Add")) { model.beginAdd() }
-                    .disabled(!model.canAdd)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .sheet(isPresented: $model.isShowingAddSheet) {
-            AddGestureSheet(model: model)
-        }
-        .alert(L("Restore default settings?"), isPresented: $model.isShowingRestoreAlert) {
-            Button(L("Cancel"), role: .cancel) {}
-            Button(L("OK"), role: .destructive) { model.restoreDefaults() }
-        } message: {
-            Text(String(format: L("Your current %@ gesture settings will be deleted."), deviceTitle(model.selectedDevice)))
-        }
-    }
-
-    private var applicationSegmentedPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach(model.applicationOptions, id: \.self) { app in
-                    Button {
-                        model.selectedApplication = model.normalizedApplicationName(app)
-                    } label: {
-                        Text(app)
-                            .font(.body.weight(.medium))
-                            .lineLimit(1)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background {
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(isSelectedApplication(app) ? Color.accentColor : Color.clear)
-                            }
-                            .foregroundStyle(isSelectedApplication(app) ? Color.white : Color.primary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(2)
-            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func isSelectedApplication(_ app: String) -> Bool {
-        model.normalizedApplicationName(app) == model.selectedApplication
     }
 
     private var commandHeader: some View {

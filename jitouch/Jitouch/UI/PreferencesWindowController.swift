@@ -621,11 +621,11 @@ struct GestureSettingsView: View {
 struct CommandRowView: View {
     @ObservedObject var model: PreferencesViewModel
     var row: PreferencesViewModel.CommandRow
+    @State private var isShowingGesturePreview = false
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(row.command.gesture)
-                .lineLimit(1)
+            gestureTitle
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if row.command.isAction {
@@ -662,6 +662,411 @@ struct CommandRowView: View {
             .frame(width: 44, alignment: .trailing)
         }
         .padding(.vertical, 4)
+    }
+
+    private var gestureTitle: some View {
+        Text(row.command.gesture)
+            .lineLimit(1)
+            .onHover { isHovering in
+                isShowingGesturePreview = isHovering
+            }
+            .popover(isPresented: $isShowingGesturePreview, arrowEdge: .trailing) {
+                GestureAnimationPreview(gesture: row.command.gesture, device: model.selectedDevice)
+            }
+    }
+}
+
+struct GestureAnimationPreview: View {
+    let gesture: String
+    let device: GestureDevice
+    private let size = CGSize(width: 184, height: 132)
+    private var sequence: GesturePreviewSequence {
+        GesturePreviewSequence(gesture: gesture, device: device)
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            TimelineView(.animation) { timeline in
+                let time = animationTime(at: timeline.date, duration: sequence.duration)
+                ZStack {
+                    deviceSurface
+                    ForEach(Array(sequence.segments.enumerated()), id: \.offset) { index, segment in
+                        if let state = segment.state(at: time) {
+                            fingerDot(state, id: index)
+                        }
+                    }
+                }
+                .frame(width: size.width, height: size.height)
+            }
+            .frame(width: size.width, height: size.height)
+
+            Text(gesture)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .frame(width: size.width)
+        }
+        .padding(14)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var deviceSurface: some View {
+        Group {
+            if device == .magicMouse {
+                Capsule()
+                    .fill(Color.primary.opacity(0.06))
+                    .overlay(Capsule().stroke(Color.primary.opacity(0.18), lineWidth: 1))
+                    .overlay(alignment: .top) {
+                        Capsule()
+                            .fill(Color.primary.opacity(0.16))
+                            .frame(width: 2, height: 30)
+                            .padding(.top, 12)
+                    }
+                    .frame(width: 104, height: 132)
+            } else {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.primary.opacity(0.18), lineWidth: 1))
+                    .frame(width: 154, height: 106)
+            }
+        }
+    }
+
+    private func fingerDot(_ state: GesturePreviewState, id: Int) -> some View {
+        let point = point(from: state.point)
+
+        return Circle()
+            .fill(state.pressed ? Color.red.opacity(0.72) : Color.accentColor.opacity(0.76))
+            .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1))
+            .frame(width: 16, height: 16)
+            .scaleEffect(state.pressed ? 1.35 : 1)
+            .position(point)
+            .shadow(color: Color.black.opacity(0.16), radius: 3, x: 0, y: 1)
+    }
+
+    private func point(from normalized: CGPoint) -> CGPoint {
+        CGPoint(x: normalized.x * size.width, y: (1 - normalized.y) * size.height)
+    }
+
+    private func animationTime(at date: Date, duration: Double) -> Double {
+        date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: max(duration, 0.1))
+    }
+}
+
+private struct GesturePreviewState {
+    let point: CGPoint
+    let pressed: Bool
+}
+
+private struct GesturePreviewSegment {
+    let start: CGPoint
+    let end: CGPoint
+    let t0: Double
+    let t1: Double
+    let holdBeforeStart: Double?
+    let holdAfterEnd: Double?
+    let pressed: Bool
+
+    func state(at time: Double) -> GesturePreviewState? {
+        if let holdBeforeStart, time >= holdBeforeStart, time <= t0 {
+            return GesturePreviewState(point: start, pressed: pressed)
+        }
+        if let holdAfterEnd, time >= t1, time <= holdAfterEnd {
+            return GesturePreviewState(point: end, pressed: pressed)
+        }
+        guard time >= t0, time <= t1 else { return nil }
+        let span = max(t1 - t0, 0.001)
+        let rawProgress = (time - t0) / span
+        let progress = (1 - sin(.pi / 2 + rawProgress * .pi)) / 2
+        let point = CGPoint(
+            x: start.x + (end.x - start.x) * progress,
+            y: start.y + (end.y - start.y) * progress
+        )
+        return GesturePreviewState(point: point, pressed: pressed)
+    }
+}
+
+private struct GesturePreviewSequence {
+    let segments: [GesturePreviewSegment]
+    let duration: Double
+
+    init(gesture: String, device: GestureDevice) {
+        let builder = GesturePreviewSequenceBuilder()
+        if device == .magicMouse {
+            builder.createMagicMouse(gesture)
+        } else {
+            builder.createTrackpad(gesture)
+        }
+        segments = builder.segments
+        duration = builder.duration
+    }
+}
+
+private final class GesturePreviewSequenceBuilder {
+    private(set) var segments: [GesturePreviewSegment] = []
+    private(set) var duration: Double = 1.6
+
+    private func reset(_ duration: Double) {
+        segments.removeAll()
+        self.duration = duration * 2
+    }
+
+    private func segment(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ t0: Double, _ t1: Double, pressed: Bool = false) {
+        segments.append(
+            GesturePreviewSegment(
+                start: CGPoint(x: x1, y: y1),
+                end: CGPoint(x: x2, y: y2),
+                t0: t0 * 2,
+                t1: t1 * 2,
+                holdBeforeStart: nil,
+                holdAfterEnd: nil,
+                pressed: pressed
+            )
+        )
+    }
+
+    private func segmentHold(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ t0: Double, _ t1: Double, _ holdStart: Double, _ holdEnd: Double, pressed: Bool = false) {
+        segments.append(
+            GesturePreviewSegment(
+                start: CGPoint(x: x1, y: y1),
+                end: CGPoint(x: x2, y: y2),
+                t0: t0 * 2,
+                t1: t1 * 2,
+                holdBeforeStart: holdStart * 2,
+                holdAfterEnd: holdEnd * 2,
+                pressed: pressed
+            )
+        )
+    }
+
+    func createTrackpad(_ gesture: String) {
+        switch gesture {
+        case "Three-Finger Tap":
+            threeFingerTap()
+        case "Three-Finger Click":
+            threeFingerClick()
+        case "Three-Finger Pinch-In":
+            reset(1); segment(0.50, 0.51, 0.50, 0.50, 0, 0.37); segmentHold(0.31, 0.48, 0.36, 0.48, 0.04, 0.29, 0, 0.37); segmentHold(0.69, 0.48, 0.64, 0.48, 0.04, 0.29, 0, 0.37)
+        case "Three-Finger Pinch-Out":
+            reset(1); segment(0.50, 0.50, 0.50, 0.51, 0, 0.37); segmentHold(0.36, 0.48, 0.31, 0.48, 0.04, 0.29, 0, 0.37); segmentHold(0.64, 0.48, 0.69, 0.48, 0.04, 0.29, 0, 0.37)
+        case "Four-Finger Tap":
+            fourFingerTap()
+        case "Four-Finger Click":
+            fourFingerClick()
+        case "One-Fix Left-Tap":
+            reset(0.6); segment(0.36, 0.49, 0.36, 0.49, 0.3, 0.45); segment(0.50, 0.50, 0.50, 0.50, 0, 1)
+        case "One-Fix Right-Tap":
+            reset(0.6); segment(0.50, 0.50, 0.50, 0.50, 0, 1); segment(0.64, 0.49, 0.64, 0.49, 0.3, 0.45)
+        case "Pinky-To-Index":
+            pinkyToIndex()
+        case "Index-To-Pinky":
+            indexToPinky()
+        case "One-Fix One-Slide":
+            moveResize()
+        case "One-Fix Two-Slide-Up":
+            oneFixTwoSlide(up: true, pressed: false)
+        case "One-Fix Two-Slide-Down":
+            oneFixTwoSlide(up: false, pressed: false)
+        case "One-Fix-Press Two-Slide-Up":
+            oneFixTwoSlide(up: true, pressed: true)
+        case "One-Fix-Press Two-Slide-Down":
+            oneFixTwoSlide(up: false, pressed: true)
+        case "Two-Fix Index-Double-Tap":
+            twoFixOneDoubleTap(0)
+        case "Two-Fix Middle-Double-Tap":
+            twoFixOneDoubleTap(1)
+        case "Two-Fix Ring-Double-Tap":
+            twoFixOneDoubleTap(2)
+        case "Two-Fix One-Slide-Up":
+            twoFixOneSlide(dx: 0, dy: 0.08)
+        case "Two-Fix One-Slide-Down":
+            twoFixOneSlide(dx: 0, dy: -0.08)
+        case "Two-Fix One-Slide-Left":
+            twoFixOneSlide(dx: -0.05, dy: 0)
+        case "Two-Fix One-Slide-Right":
+            twoFixOneSlide(dx: 0.05, dy: 0)
+        case "Three-Swipe-Up":
+            threeSwipe(dx: 0, dy: 0.14)
+        case "Three-Swipe-Down":
+            threeSwipe(dx: 0, dy: -0.14)
+        case "Three-Swipe-Left":
+            threeSwipe(dx: -0.14, dy: 0)
+        case "Three-Swipe-Right":
+            threeSwipe(dx: 0.14, dy: 0)
+        case "Four-Swipe-Up":
+            fourSwipe(dx: 0, dy: 0.14)
+        case "Four-Swipe-Down":
+            fourSwipe(dx: 0, dy: -0.14)
+        case "Four-Swipe-Left":
+            fourSwipe(dx: -0.14, dy: 0)
+        case "Four-Swipe-Right":
+            fourSwipe(dx: 0.14, dy: 0)
+        case "Left-Side Scroll":
+            sideScroll(left: true)
+        case "Right-Side Scroll":
+            sideScroll(left: false)
+        default:
+            fallbackTrackpad(gesture)
+        }
+    }
+
+    func createMagicMouse(_ gesture: String) {
+        switch gesture {
+        case "Middle-Fix Index-Slide-Out":
+            mouseFixedSlide(fixedX: 0.75, startX: 0.45, endX: 0.25)
+        case "Middle-Fix Index-Slide-In":
+            mouseFixedSlide(fixedX: 0.75, startX: 0.25, endX: 0.45)
+        case "Index-Fix Middle-Slide-In":
+            mouseFixedSlide(fixedX: 0.25, startX: 0.75, endX: 0.60)
+        case "Index-Fix Middle-Slide-Out":
+            mouseFixedSlide(fixedX: 0.25, startX: 0.60, endX: 0.75)
+        case "Three-Swipe-Left":
+            mouseThreeSwipe(dx: -0.15, dy: 0)
+        case "Three-Swipe-Right":
+            mouseThreeSwipe(dx: 0.15, dy: 0)
+        case "Three-Swipe-Up":
+            mouseThreeSwipe(dx: 0, dy: 0.08)
+        case "Three-Swipe-Down":
+            mouseThreeSwipe(dx: 0, dy: -0.08)
+        case "Three-Finger Click":
+            reset(0.7); segment(0.25, 0.75, 0.25, 0.75, 0.25, 0.4, pressed: true); segment(0.50, 0.75, 0.50, 0.75, 0.25, 0.4, pressed: true); segment(0.75, 0.75, 0.75, 0.75, 0.25, 0.4, pressed: true)
+        case "Middle-Fix Index-Near-Tap":
+            reset(0.6); segment(0.50, 0.75, 0.50, 0.75, 0.3, 0.45); segment(0.75, 0.75, 0.75, 0.75, 0, 1)
+        case "Middle-Fix Index-Far-Tap":
+            reset(0.6); segment(0.25, 0.75, 0.25, 0.75, 0.3, 0.45); segment(0.75, 0.75, 0.75, 0.75, 0, 1)
+        case "Index-Fix Middle-Near-Tap":
+            reset(0.6); segment(0.50, 0.75, 0.50, 0.75, 0.3, 0.45); segment(0.25, 0.75, 0.25, 0.75, 0, 1)
+        case "Index-Fix Middle-Far-Tap":
+            reset(0.6); segment(0.75, 0.75, 0.75, 0.75, 0.3, 0.45); segment(0.25, 0.75, 0.25, 0.75, 0, 1)
+        case "One-Fix Left-Tap":
+            reset(0.6); segment(0.30, 0.75, 0.30, 0.75, 0.3, 0.45); segment(0.70, 0.75, 0.70, 0.75, 0, 1)
+        case "One-Fix Right-Tap":
+            reset(0.6); segment(0.30, 0.75, 0.30, 0.75, 0, 1); segment(0.70, 0.75, 0.70, 0.75, 0.3, 0.45)
+        case "V-Shape":
+            reset(1); segment(0.11, 0.84, 0.11, 0.84, 0, 4); segment(0.87, 0.84, 0.87, 0.84, 0, 4)
+        case "Thumb":
+            reset(0.7); segment(0.15, 0.55, 0.15, 0.55, 0, 1)
+        case "Middle Click":
+            reset(0.7); segment(0.75, 0.75, 0.75, 0.75, 0.25, 0.4, pressed: true); segment(0.50, 0.75, 0.50, 0.75, 0.25, 0.4, pressed: true)
+        case "Two-Fix One-Slide-Up":
+            mouseTwoFixOneSlide(dx: 0, dy: 0.06)
+        case "Two-Fix One-Slide-Down":
+            mouseTwoFixOneSlide(dx: 0, dy: -0.06)
+        case "Two-Fix One-Slide-Left":
+            mouseTwoFixOneSlide(dx: -0.08, dy: 0)
+        case "Two-Fix One-Slide-Right":
+            mouseTwoFixOneSlide(dx: 0.08, dy: 0)
+        default:
+            createTrackpad(gesture)
+        }
+    }
+
+    private func threeFingerTap() {
+        reset(3.8)
+        segment(0.36, 0.50, 0.36, 0.50, 0.25, 0.4); segment(0.50, 0.53, 0.50, 0.53, 0.25, 0.4); segment(0.64, 0.51, 0.64, 0.51, 0.25, 0.4)
+        segment(0.36, 0.50, 0.36, 0.50, 1, 1.9); segment(0.50, 0.53, 0.50, 0.53, 1.5, 1.65); segment(0.64, 0.51, 0.64, 0.51, 1.5, 1.65)
+        segment(0.36, 0.50, 0.36, 0.50, 3, 3.15); segment(0.50, 0.53, 0.50, 0.53, 2.5, 3.5); segment(0.64, 0.51, 0.64, 0.51, 3, 3.15)
+    }
+
+    private func threeFingerClick() {
+        reset(0.7)
+        segment(0.36, 0.50, 0.36, 0.50, 0, 1); segment(0.50, 0.53, 0.50, 0.53, 0, 1); segment(0.64, 0.51, 0.64, 0.51, 0, 1)
+        segment(0.36, 0.50, 0.36, 0.50, 0.25, 0.4, pressed: true); segment(0.50, 0.53, 0.50, 0.53, 0.25, 0.4, pressed: true); segment(0.64, 0.51, 0.64, 0.51, 0.25, 0.4, pressed: true)
+    }
+
+    private func fourFingerTap() {
+        reset(2.5)
+        let points: [CGPoint] = [CGPoint(x: 0.29, y: 0.50), CGPoint(x: 0.43, y: 0.53), CGPoint(x: 0.57, y: 0.51), CGPoint(x: 0.71, y: 0.48)]
+        for point in points { segment(point.x, point.y, point.x, point.y, 0.25, 0.4) }
+        for (index, point) in points.enumerated() { segment(point.x, point.y, point.x, point.y, index == 0 ? 1 : 1.5, index == 0 ? 1.9 : 1.65) }
+    }
+
+    private func fourFingerClick() {
+        reset(0.7)
+        let points: [CGPoint] = [CGPoint(x: 0.29, y: 0.50), CGPoint(x: 0.43, y: 0.53), CGPoint(x: 0.57, y: 0.51), CGPoint(x: 0.71, y: 0.48)]
+        for point in points { segment(point.x, point.y, point.x, point.y, 0, 1) }
+        for point in points { segment(point.x, point.y, point.x, point.y, 0.25, 0.4, pressed: true) }
+    }
+
+    private func indexToPinky() {
+        reset(1); segment(0.29, 0.45, 0.29, 0.45, 0, 0.4); segment(0.43, 0.51, 0.43, 0.51, 0.1, 0.4); segment(0.57, 0.485, 0.57, 0.485, 0.2, 0.4); segment(0.71, 0.43, 0.71, 0.43, 0.3, 0.4)
+    }
+
+    private func pinkyToIndex() {
+        reset(1); segment(0.29, 0.45, 0.29, 0.45, 0.3, 0.4); segment(0.43, 0.51, 0.43, 0.51, 0.2, 0.4); segment(0.57, 0.485, 0.57, 0.485, 0.1, 0.4); segment(0.71, 0.43, 0.71, 0.43, 0, 0.4)
+    }
+
+    private func moveResize() {
+        reset(3); segment(0.43, 0.50, 0.43, 0.50, 0, 3); segmentHold(0.57, 0.57, 0.57, 0.43, 0.4, 0.8, 0.33, 1); segment(0.57, 0.50, 0.57, 0.50, 1.5, 1.65); segmentHold(0.57, 0.43, 0.57, 0.57, 2.15, 2.55, 2.08, 2.75)
+    }
+
+    private func oneFixTwoSlide(up: Bool, pressed: Bool) {
+        reset(1.1)
+        segment(0.36, 0.50, 0.36, 0.50, 0, 1.1, pressed: pressed)
+        let y1: CGFloat = up ? 0.41 : 0.62
+        let y2: CGFloat = up ? 0.62 : 0.41
+        segmentHold(0.50, y1, 0.50, y2, 0.4, 0.8, 0.33, 1)
+        segmentHold(0.64, up ? 0.38 : 0.60, 0.64, up ? 0.60 : 0.38, 0.4, 0.8, 0.33, 1)
+    }
+
+    private func twoFixOneDoubleTap(_ type: Int) {
+        reset(1)
+        let fixed = [CGPoint(x: 0.36, y: 0.50), CGPoint(x: 0.50, y: 0.53), CGPoint(x: 0.64, y: 0.51)]
+        for (index, point) in fixed.enumerated() where index != type { segment(point.x, point.y, point.x, point.y, 0, 1) }
+        let tap = fixed[type]
+        segment(tap.x, tap.y, tap.x, tap.y, 0.5, 0.6)
+        segment(tap.x, tap.y, tap.x, tap.y, 0.7, 0.8)
+    }
+
+    private func twoFixOneSlide(dx: CGFloat, dy: CGFloat) {
+        reset(1)
+        segment(0.50, 0.50, 0.50, 0.50, 0, 4)
+        segment(0.64, 0.49, 0.64, 0.49, 0, 4)
+        segmentHold(0.36, 0.48, 0.36 + dx, 0.48 + dy, 0.5, 0.75, 0.46, 0.83)
+    }
+
+    private func threeSwipe(dx: CGFloat, dy: CGFloat) {
+        reset(0.8)
+        let points = [CGPoint(x: 0.36, y: 0.50), CGPoint(x: 0.50, y: 0.53), CGPoint(x: 0.64, y: 0.50)]
+        for point in points { segmentHold(point.x - dx / 2, point.y - dy / 2, point.x + dx / 2, point.y + dy / 2, 0.3, 0.55, 0, 0.63) }
+    }
+
+    private func fourSwipe(dx: CGFloat, dy: CGFloat) {
+        reset(0.8)
+        let points = [CGPoint(x: 0.29, y: 0.50), CGPoint(x: 0.43, y: 0.53), CGPoint(x: 0.57, y: 0.53), CGPoint(x: 0.71, y: 0.50)]
+        for point in points { segmentHold(point.x - dx / 2, point.y - dy / 2, point.x + dx / 2, point.y + dy / 2, 0.3, 0.55, 0, 0.63) }
+    }
+
+    private func sideScroll(left: Bool) {
+        reset(2.1)
+        let xs: [CGFloat] = left ? [0.05, 0.15] : [0.95, 0.85]
+        for x in xs { segmentHold(x, 0.50, x, 0.60, 0.2, 0.8, 0.1, 0.8) }
+        for x in xs { segmentHold(x, 0.60, x, 0.40, 0.8, 1.4, 0.8, 1.4) }
+        for x in xs { segmentHold(x, 0.40, x, 0.50, 1.4, 2.0, 1.4, 2.1) }
+    }
+
+    private func fallbackTrackpad(_ gesture: String) {
+        reset(1)
+        if gesture.contains("Four") { fourSwipe(dx: 0.10, dy: 0) }
+        else if gesture.contains("Three") { threeSwipe(dx: 0.10, dy: 0) }
+        else { segment(0.50, 0.50, 0.50, 0.50, 0.25, 0.7) }
+    }
+
+    private func mouseFixedSlide(fixedX: CGFloat, startX: CGFloat, endX: CGFloat) {
+        reset(1); segment(fixedX, 0.75, fixedX, 0.75, 0, 4); segmentHold(startX, 0.75, endX, 0.75, 0.5, 0.75, 0.46, 0.83)
+    }
+
+    private func mouseThreeSwipe(dx: CGFloat, dy: CGFloat) {
+        reset(1)
+        let points = [CGPoint(x: 0.25, y: 0.75), CGPoint(x: 0.50, y: 0.75), CGPoint(x: 0.75, y: 0.75)]
+        for point in points { segmentHold(point.x - dx / 2, point.y - dy / 2, point.x + dx / 2, point.y + dy / 2, 0.5, 0.75, 0.46, 0.83) }
+    }
+
+    private func mouseTwoFixOneSlide(dx: CGFloat, dy: CGFloat) {
+        reset(1)
+        segment(0.50, 0.75, 0.50, 0.75, 0, 4)
+        segment(0.75, 0.75, 0.75, 0.75, 0, 4)
+        segmentHold(0.25, 0.75, 0.25 + dx, 0.75 + dy, 0.5, 0.75, 0.46, 0.85)
     }
 }
 

@@ -329,11 +329,9 @@ struct PreferencesRootView: View {
             switch model.selectedTab {
             case .gestures:
                 GestureSettingsView(model: model)
-                    .liquidGlassCard()
                     .padding(24)
             case .general:
                 GeneralSettingsView(model: model)
-                    .liquidGlassCard()
                     .padding(24)
             }
         }

@@ -14,25 +14,25 @@
 		A84E89021081B2F30047B86A /* jitouchicon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A84E89011081B2F30047B86A /* jitouchicon.icns */; };
 		A8DB0A4A10842620000A2A08 /* logosmall.png in Resources */ = {isa = PBXBuildFile; fileRef = A8DB0A4910842620000A2A08 /* logosmall.png */; };
 		A8EB72071085318200563ED4 /* logosmalloff.png in Resources */ = {isa = PBXBuildFile; fileRef = A8EB72061085318200563ED4 /* logosmalloff.png */; };
+		D00100000000000000000001 /* App/main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000001 /* App/main.swift */; };
+		D00100000000000000000002 /* App/AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000002 /* App/AppDelegate.swift */; };
+		D00100000000000000000003 /* App/Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000003 /* App/Notifications.swift */; };
+		D00100000000000000000004 /* App/LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000004 /* App/LaunchAgentManager.swift */; };
+		D00100000000000000000006 /* UI/StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000006 /* UI/StatusBarController.swift */; };
+		D00100000000000000000007 /* Settings/JitouchSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000007 /* Settings/JitouchSettings.swift */; };
+		D00100000000000000000008 /* Settings/SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000008 /* Settings/SettingsStore.swift */; };
+		D00100000000000000000009 /* Gestures/GestureTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000009 /* Gestures/GestureTypes.swift */; };
+		D0010000000000000000000A /* Gestures/TrackpadGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000A /* Gestures/TrackpadGestureRecognizer.swift */; };
+		D0010000000000000000000B /* Gestures/MagicMouseGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000B /* Gestures/MagicMouseGestureRecognizer.swift */; };
+		D0010000000000000000000C /* Gestures/GestureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000C /* Gestures/GestureController.swift */; };
+		D0010000000000000000000D /* Input/MultiTouchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000D /* Input/MultiTouchSupport.swift */; };
+		D0010000000000000000000E /* Input/MultiTouchDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000E /* Input/MultiTouchDeviceManager.swift */; };
+		D0010000000000000000000F /* Input/EventTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000F /* Input/EventTap.swift */; };
+		D00100000000000000000010 /* Commands/KeySimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000010 /* Commands/KeySimulator.swift */; };
+		D00100000000000000000011 /* Commands/AccessibilityWindowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000011 /* Commands/AccessibilityWindowService.swift */; };
+		D00100000000000000000012 /* Commands/CommandDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000012 /* Commands/CommandDispatcher.swift */; };
+		D00100000000000000000013 /* UI/PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000013 /* UI/PreferencesWindowController.swift */; };
 		D00100000000000000000014 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D00400000000000000000001 /* Localizable.strings */; };
-		D00100000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000001 /* main.swift */; };
-		D00100000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000002 /* AppDelegate.swift */; };
-		D00100000000000000000003 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000003 /* Notifications.swift */; };
-		D00100000000000000000004 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000004 /* LaunchAgentManager.swift */; };
-		D00100000000000000000006 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000006 /* StatusBarController.swift */; };
-		D00100000000000000000007 /* JitouchSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000007 /* JitouchSettings.swift */; };
-		D00100000000000000000008 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000008 /* SettingsStore.swift */; };
-		D00100000000000000000009 /* GestureTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000009 /* GestureTypes.swift */; };
-		D0010000000000000000000A /* TrackpadGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000A /* TrackpadGestureRecognizer.swift */; };
-		D0010000000000000000000B /* MagicMouseGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000B /* MagicMouseGestureRecognizer.swift */; };
-		D0010000000000000000000C /* GestureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000C /* GestureController.swift */; };
-		D0010000000000000000000D /* MultiTouchSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000D /* MultiTouchSupport.swift */; };
-		D0010000000000000000000E /* MultiTouchDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000E /* MultiTouchDeviceManager.swift */; };
-		D0010000000000000000000F /* EventTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0020000000000000000000F /* EventTap.swift */; };
-		D00100000000000000000010 /* KeySimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000010 /* KeySimulator.swift */; };
-		D00100000000000000000011 /* AccessibilityWindowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000011 /* AccessibilityWindowService.swift */; };
-		D00100000000000000000012 /* CommandDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000012 /* CommandDispatcher.swift */; };
-		D00100000000000000000013 /* PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000013 /* PreferencesWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,42 +43,36 @@
 		7B703DBA262EBEB1002157DD /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		7B703DBC262EBEB7002157DD /* ScriptingBridge.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScriptingBridge.framework; path = System/Library/Frameworks/ScriptingBridge.framework; sourceTree = SDKROOT; };
 		7B703DBE262EBED6002157DD /* MultitouchSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MultitouchSupport.framework; path = System/Library/PrivateFrameworks/MultitouchSupport.framework; sourceTree = SDKROOT; };
-		7BFB3D2518612568004A44B6 /* instructions.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = instructions.html; sourceTree = "<group>"; };
-		7BFB3D2618612568004A44B6 /* step1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = step1.png; sourceTree = "<group>"; };
-		7BFB3D2718612568004A44B6 /* step2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = step2.png; sourceTree = "<group>"; };
-		7BFB3D2818612568004A44B6 /* step3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = step3.png; sourceTree = "<group>"; };
-		7BFB3D2918612568004A44B6 /* step4.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = step4.png; sourceTree = "<group>"; };
-		7BFB3D2A18612568004A44B6 /* step5.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = step5.png; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A80A939A10923DC300F92D3F /* move.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = move.png; path = ../move.png; sourceTree = SOURCE_ROOT; };
 		A84E89011081B2F30047B86A /* jitouchicon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = jitouchicon.icns; path = ../jitouchicon.icns; sourceTree = SOURCE_ROOT; };
-		A84E892C1081B6980047B86A /* Jitouch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jitouch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A84E892C1081B6980047B86A /* Jitouch Modern.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Jitouch Modern.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A85BFEC010B8AEFF00201BF7 /* tab.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = tab.png; path = ../tab.png; sourceTree = SOURCE_ROOT; };
 		A8D4973610918F7E005C3998 /* resize.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = resize.png; path = ../resize.png; sourceTree = SOURCE_ROOT; };
 		A8DB0A4910842620000A2A08 /* logosmall.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logosmall.png; path = ../logosmall.png; sourceTree = SOURCE_ROOT; };
 		A8EB72061085318200563ED4 /* logosmalloff.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logosmalloff.png; path = ../logosmalloff.png; sourceTree = SOURCE_ROOT; };
-		D7730023274C86F000C49145 /* JitouchDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JitouchDebug.entitlements; sourceTree = "<group>"; };
-		D7AE605B274C7A8400FBD29A /* Jitouch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jitouch.entitlements; sourceTree = "<group>"; };
-		D00200000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/main.swift; sourceTree = "<group>"; };
-		D00200000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDelegate.swift; sourceTree = "<group>"; };
-		D00200000000000000000003 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/Notifications.swift; sourceTree = "<group>"; };
-		D00200000000000000000004 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/LaunchAgentManager.swift; sourceTree = "<group>"; };
-		D00200000000000000000006 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/StatusBarController.swift; sourceTree = "<group>"; };
-		D00200000000000000000007 /* JitouchSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/JitouchSettings.swift; sourceTree = "<group>"; };
-		D00200000000000000000008 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/SettingsStore.swift; sourceTree = "<group>"; };
-		D00200000000000000000009 /* GestureTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/GestureTypes.swift; sourceTree = "<group>"; };
-		D0020000000000000000000A /* TrackpadGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/TrackpadGestureRecognizer.swift; sourceTree = "<group>"; };
-		D0020000000000000000000B /* MagicMouseGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/MagicMouseGestureRecognizer.swift; sourceTree = "<group>"; };
-		D0020000000000000000000C /* GestureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/GestureController.swift; sourceTree = "<group>"; };
-		D0020000000000000000000D /* MultiTouchSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input/MultiTouchSupport.swift; sourceTree = "<group>"; };
-		D0020000000000000000000E /* MultiTouchDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input/MultiTouchDeviceManager.swift; sourceTree = "<group>"; };
-		D0020000000000000000000F /* EventTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input/EventTap.swift; sourceTree = "<group>"; };
-		D00200000000000000000010 /* KeySimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/KeySimulator.swift; sourceTree = "<group>"; };
-		D00200000000000000000011 /* AccessibilityWindowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/AccessibilityWindowService.swift; sourceTree = "<group>"; };
-		D00200000000000000000012 /* CommandDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/CommandDispatcher.swift; sourceTree = "<group>"; };
-		D00200000000000000000013 /* PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/PreferencesWindowController.swift; sourceTree = "<group>"; };
+		D00200000000000000000001 /* App/main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/main.swift; sourceTree = "<group>"; };
+		D00200000000000000000002 /* App/AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDelegate.swift; sourceTree = "<group>"; };
+		D00200000000000000000003 /* App/Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/Notifications.swift; sourceTree = "<group>"; };
+		D00200000000000000000004 /* App/LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/LaunchAgentManager.swift; sourceTree = "<group>"; };
+		D00200000000000000000006 /* UI/StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/StatusBarController.swift; sourceTree = "<group>"; };
+		D00200000000000000000007 /* Settings/JitouchSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/JitouchSettings.swift; sourceTree = "<group>"; };
+		D00200000000000000000008 /* Settings/SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/SettingsStore.swift; sourceTree = "<group>"; };
+		D00200000000000000000009 /* Gestures/GestureTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/GestureTypes.swift; sourceTree = "<group>"; };
+		D0020000000000000000000A /* Gestures/TrackpadGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/TrackpadGestureRecognizer.swift; sourceTree = "<group>"; };
+		D0020000000000000000000B /* Gestures/MagicMouseGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/MagicMouseGestureRecognizer.swift; sourceTree = "<group>"; };
+		D0020000000000000000000C /* Gestures/GestureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures/GestureController.swift; sourceTree = "<group>"; };
+		D0020000000000000000000D /* Input/MultiTouchSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input/MultiTouchSupport.swift; sourceTree = "<group>"; };
+		D0020000000000000000000E /* Input/MultiTouchDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input/MultiTouchDeviceManager.swift; sourceTree = "<group>"; };
+		D0020000000000000000000F /* Input/EventTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input/EventTap.swift; sourceTree = "<group>"; };
+		D00200000000000000000010 /* Commands/KeySimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/KeySimulator.swift; sourceTree = "<group>"; };
+		D00200000000000000000011 /* Commands/AccessibilityWindowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/AccessibilityWindowService.swift; sourceTree = "<group>"; };
+		D00200000000000000000012 /* Commands/CommandDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/CommandDispatcher.swift; sourceTree = "<group>"; };
+		D00200000000000000000013 /* UI/PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/PreferencesWindowController.swift; sourceTree = "<group>"; };
 		D00300000000000000000001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D00300000000000000000002 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		D7730023274C86F000C49145 /* JitouchDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JitouchDebug.entitlements; sourceTree = "<group>"; };
+		D7AE605B274C7A8400FBD29A /* Jitouch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jitouch.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,24 +91,24 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				D00200000000000000000001 /* main.swift */,
-				D00200000000000000000002 /* AppDelegate.swift */,
-				D00200000000000000000003 /* Notifications.swift */,
-				D00200000000000000000004 /* LaunchAgentManager.swift */,
-				D00200000000000000000006 /* StatusBarController.swift */,
-				D00200000000000000000013 /* PreferencesWindowController.swift */,
-				D00200000000000000000007 /* JitouchSettings.swift */,
-				D00200000000000000000008 /* SettingsStore.swift */,
-				D00200000000000000000009 /* GestureTypes.swift */,
-				D0020000000000000000000A /* TrackpadGestureRecognizer.swift */,
-				D0020000000000000000000B /* MagicMouseGestureRecognizer.swift */,
-				D0020000000000000000000C /* GestureController.swift */,
-				D0020000000000000000000D /* MultiTouchSupport.swift */,
-				D0020000000000000000000E /* MultiTouchDeviceManager.swift */,
-				D0020000000000000000000F /* EventTap.swift */,
-				D00200000000000000000010 /* KeySimulator.swift */,
-				D00200000000000000000011 /* AccessibilityWindowService.swift */,
-				D00200000000000000000012 /* CommandDispatcher.swift */,
+				D00200000000000000000001 /* App/main.swift */,
+				D00200000000000000000002 /* App/AppDelegate.swift */,
+				D00200000000000000000003 /* App/Notifications.swift */,
+				D00200000000000000000004 /* App/LaunchAgentManager.swift */,
+				D00200000000000000000006 /* UI/StatusBarController.swift */,
+				D00200000000000000000013 /* UI/PreferencesWindowController.swift */,
+				D00200000000000000000007 /* Settings/JitouchSettings.swift */,
+				D00200000000000000000008 /* Settings/SettingsStore.swift */,
+				D00200000000000000000009 /* Gestures/GestureTypes.swift */,
+				D0020000000000000000000A /* Gestures/TrackpadGestureRecognizer.swift */,
+				D0020000000000000000000B /* Gestures/MagicMouseGestureRecognizer.swift */,
+				D0020000000000000000000C /* Gestures/GestureController.swift */,
+				D0020000000000000000000D /* Input/MultiTouchSupport.swift */,
+				D0020000000000000000000E /* Input/MultiTouchDeviceManager.swift */,
+				D0020000000000000000000F /* Input/EventTap.swift */,
+				D00200000000000000000010 /* Commands/KeySimulator.swift */,
+				D00200000000000000000011 /* Commands/AccessibilityWindowService.swift */,
+				D00200000000000000000012 /* Commands/CommandDispatcher.swift */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -122,7 +116,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A84E892C1081B6980047B86A /* Jitouch.app */,
+				A84E892C1081B6980047B86A /* Jitouch Modern.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -177,20 +171,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		7BFB3D2418612568004A44B6 /* instructions */ = {
-			isa = PBXGroup;
-			children = (
-				7BFB3D2518612568004A44B6 /* instructions.html */,
-				7BFB3D2618612568004A44B6 /* step1.png */,
-				7BFB3D2718612568004A44B6 /* step2.png */,
-				7BFB3D2818612568004A44B6 /* step3.png */,
-				7BFB3D2918612568004A44B6 /* step4.png */,
-				7BFB3D2A18612568004A44B6 /* step5.png */,
-			);
-			name = instructions;
-			path = ../instructions;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -209,7 +189,7 @@
 			name = Jitouch;
 			productInstallPath = "$(HOME)/Applications";
 			productName = Jitouch;
-			productReference = A84E892C1081B6980047B86A /* Jitouch.app */;
+			productReference = A84E892C1081B6980047B86A /* Jitouch Modern.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -224,11 +204,11 @@
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
-				knownRegions = (
-					Base,
-					en,
-					"zh-Hans",
-				);
+			knownRegions = (
+				Base,
+				en,
+				"zh-Hans",
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* Jitouch */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -259,37 +239,30 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D00100000000000000000001 /* main.swift in Sources */,
-				D00100000000000000000002 /* AppDelegate.swift in Sources */,
-				D00100000000000000000003 /* Notifications.swift in Sources */,
-				D00100000000000000000004 /* LaunchAgentManager.swift in Sources */,
-				D00100000000000000000006 /* StatusBarController.swift in Sources */,
-				D00100000000000000000013 /* PreferencesWindowController.swift in Sources */,
-				D00100000000000000000007 /* JitouchSettings.swift in Sources */,
-				D00100000000000000000008 /* SettingsStore.swift in Sources */,
-				D00100000000000000000009 /* GestureTypes.swift in Sources */,
-				D0010000000000000000000A /* TrackpadGestureRecognizer.swift in Sources */,
-				D0010000000000000000000B /* MagicMouseGestureRecognizer.swift in Sources */,
-				D0010000000000000000000C /* GestureController.swift in Sources */,
-				D0010000000000000000000D /* MultiTouchSupport.swift in Sources */,
-				D0010000000000000000000E /* MultiTouchDeviceManager.swift in Sources */,
-				D0010000000000000000000F /* EventTap.swift in Sources */,
-				D00100000000000000000010 /* KeySimulator.swift in Sources */,
-				D00100000000000000000011 /* AccessibilityWindowService.swift in Sources */,
-				D00100000000000000000012 /* CommandDispatcher.swift in Sources */,
+				D00100000000000000000001 /* App/main.swift in Sources */,
+				D00100000000000000000002 /* App/AppDelegate.swift in Sources */,
+				D00100000000000000000003 /* App/Notifications.swift in Sources */,
+				D00100000000000000000004 /* App/LaunchAgentManager.swift in Sources */,
+				D00100000000000000000006 /* UI/StatusBarController.swift in Sources */,
+				D00100000000000000000013 /* UI/PreferencesWindowController.swift in Sources */,
+				D00100000000000000000007 /* Settings/JitouchSettings.swift in Sources */,
+				D00100000000000000000008 /* Settings/SettingsStore.swift in Sources */,
+				D00100000000000000000009 /* Gestures/GestureTypes.swift in Sources */,
+				D0010000000000000000000A /* Gestures/TrackpadGestureRecognizer.swift in Sources */,
+				D0010000000000000000000B /* Gestures/MagicMouseGestureRecognizer.swift in Sources */,
+				D0010000000000000000000C /* Gestures/GestureController.swift in Sources */,
+				D0010000000000000000000D /* Input/MultiTouchSupport.swift in Sources */,
+				D0010000000000000000000E /* Input/MultiTouchDeviceManager.swift in Sources */,
+				D0010000000000000000000F /* Input/EventTap.swift in Sources */,
+				D00100000000000000000010 /* Commands/KeySimulator.swift in Sources */,
+				D00100000000000000000011 /* Commands/AccessibilityWindowService.swift in Sources */,
+				D00100000000000000000012 /* Commands/CommandDispatcher.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		1DDD58140DA1D0A300B32029 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
 		D00400000000000000000001 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -314,11 +287,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "2.82.1";
+				CURRENT_PROJECT_VERSION = 2.82.1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				DEVELOPMENT_TEAM = 5UQY3B3594;
+				DEVELOPMENT_TEAM = 8TFPGX29CB;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -329,13 +302,13 @@
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = "2.82.1";
+				MARKETING_VERSION = 2.82.1;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.zhuanz.JitouchModern;
+				PRODUCT_BUNDLE_IDENTIFIER = com.JitouchModern;
 				PRODUCT_NAME = "Jitouch Modern";
-				SWIFT_VERSION = 5.0;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_INSTALLED_PRODUCT = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -345,15 +318,16 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_ENTITLEMENTS = Jitouch.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = "2.82.1";
+				CURRENT_PROJECT_VERSION = 2.82.1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				DEVELOPMENT_TEAM = 5UQY3B3594;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -363,12 +337,12 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = "2.82.1";
-				PRODUCT_BUNDLE_IDENTIFIER = com.zhuanz.JitouchModern;
+				MARKETING_VERSION = 2.82.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.JitouchModern;
 				PRODUCT_NAME = "Jitouch Modern";
-				SWIFT_VERSION = 5.0;
-				PROVISIONING_PROFILE_SPECIFIER = "Jitouch Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_INSTALLED_PRODUCT = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};

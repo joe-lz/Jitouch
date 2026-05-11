@@ -940,27 +940,33 @@ struct GeneralSettingsView: View {
 
     private func languageRow(_ selection: Binding<AppLanguage>) -> some View {
         generalRow(L("Language")) {
-            Picker("", selection: selection) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(languageTitle(language)).tag(language)
+            HStack {
+                Spacer(minLength: 0)
+                Picker("", selection: selection) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(languageTitle(language)).tag(language)
+                    }
                 }
+                .labelsHidden()
+                .pickerStyle(.menu)
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: controlWidth)
+            .frame(width: controlWidth, alignment: .trailing)
         }
     }
 
     private func themeRow(_ selection: Binding<AppThemeMode>) -> some View {
         generalRow(L("Theme Mode")) {
-            Picker("", selection: selection) {
-                ForEach(AppThemeMode.allCases) { themeMode in
-                    Text(themeTitle(themeMode)).tag(themeMode)
+            HStack {
+                Spacer(minLength: 0)
+                Picker("", selection: selection) {
+                    ForEach(AppThemeMode.allCases) { themeMode in
+                        Text(themeTitle(themeMode)).tag(themeMode)
+                    }
                 }
+                .labelsHidden()
+                .pickerStyle(.menu)
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(width: controlWidth)
+            .frame(width: controlWidth, alignment: .trailing)
         }
     }
 

@@ -6,26 +6,24 @@ For more details, see https://www.jitouch.com/.
 
 ## Installation
 
-Download `Install-Jitouch.pkg` from the [releases](https://github.com/aaronkollasch/jitouch/releases/latest) page.
-Double-click and follow the instructions to install.
+Download `Jitouch Modern.app` from the [releases](https://github.com/aaronkollasch/jitouch/releases/latest) page.
+Move it to your Applications folder and open it.
 
 ## Troubleshooting
 
-When opening the Jitouch preference pane for the first time, you may see an error message such as "Could not load Jitouch preference pane". If so, restarting your computer should fix this.
-
-After opening the Jitouch preference pane in System Preferences, a prompt should appear to give Jitouch accessibility permissions. If the prompt doesn't appear, try switching Jitouch off and on in the Jitouch preference pane. Otherwise, you will need to manually give Jitouch permissions.
+When opening Jitouch for the first time, macOS should prompt you to grant accessibility permissions. If the prompt does not appear, open Jitouch and grant permissions manually.
 
 #### To manually give Jitouch permissions:
-- Go to the folder `/Library/PreferencePanes/Jitouch.prefPane/Contents/Resources/` in Finder. If you installed Jitouch for your user only, replace `/Library` with `~/Library`. This folder should contain an application named Jitouch.app.
-- Open System Preferences and go to "Security & Privacy -> Privacy -> Accessibility", which is a list labeled "Allow these apps to control your computer".
-- Click the lock to make changes, then drag Jitouch.app from Finder into that list.
+- Open System Settings and go to "Privacy & Security -> Accessibility".
+- Add `Jitouch Modern.app` to the list and enable it.
 - Force restart Jitouch with `killall Jitouch` in the Terminal.
 
 ## How to build from source
 
-1. Open jitouch/Jitouch/Jitouch.xcodeproj in Xcode and build the project. This will create Jitouch.app in the prefpane folder. For the highest performance, set the Build Configuration to Release.
-2. Open prefpane/Jitouch.xcodeproj in Xcode and build the project. This will create Jitouch.prefPane.
-3. Double-click Jitouch.prefPane to install Jitouch.
+1. Open `jitouch/Jitouch/Jitouch.xcodeproj` in Xcode.
+2. Select the `Jitouch` scheme.
+3. Build the project. For the highest performance, set the Build Configuration to Release.
+4. Move the built `Jitouch Modern.app` to your Applications folder.
 
 ## License
 

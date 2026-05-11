@@ -6,6 +6,6 @@ extension Notification.Name {
 }
 
 enum NotificationObject {
-    static let preferencePaneToApp = "com.zhuanz.JitouchModern.preferences"
-    static let appToPreferencePane = "com.zhuanz.JitouchModern.runtime"
+    static let preferences = "com.zhuanz.JitouchModern.preferences"
+    static let runtime = "com.zhuanz.JitouchModern.runtime"
 }

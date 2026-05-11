@@ -24,11 +24,10 @@ final class SettingsStore {
     var settings = JitouchSettings()
 
     func load() {
-        let url = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Preferences/com.zhuanz.JitouchModern.plist")
-
+        let preferencesDirectory = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Preferences")
         guard
-            let data = try? Data(contentsOf: url),
+            let data = try? Data(contentsOf: preferencesDirectory.appendingPathComponent("com.zhuanz.JitouchModern.plist")),
             let plist = try? PropertyListSerialization.propertyList(from: data, options: [.mutableContainersAndLeaves], format: nil),
             let dictionary = plist as? [String: Any]
         else {
@@ -40,6 +39,7 @@ final class SettingsStore {
 
         rawSettings = dictionary
         apply(dictionary)
+        persistRawSettings()
     }
 
     func load(from userInfo: [AnyHashable: Any]?) {
@@ -74,7 +74,7 @@ final class SettingsStore {
     func postRuntimeSettingsChanged() {
         DistributedNotificationCenter.default().postNotificationName(
             .jitouchRuntimeDidChange,
-            object: NotificationObject.appToPreferencePane,
+            object: NotificationObject.runtime,
             userInfo: [Key.enabled: NSNumber(value: settings.isEnabled)],
             deliverImmediately: true
         )

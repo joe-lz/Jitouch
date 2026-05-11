@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(settingsUpdated(_:)),
             name: .jitouchPreferencesDidChange,
-            object: NotificationObject.preferencePaneToApp
+            object: NotificationObject.preferences
         )
     }
 

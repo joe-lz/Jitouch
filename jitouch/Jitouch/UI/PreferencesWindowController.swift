@@ -59,7 +59,7 @@ final class PreferencesWindowController: NSWindowController {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.toolbar = NSToolbar()
-        window.toolbar?.isVisible = false
+        window.toolbar?.isVisible = true
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         super.init(window: window)
@@ -522,36 +522,37 @@ struct GestureSettingsView: View {
     @ObservedObject var model: PreferencesViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            applicationSegmentedPicker
-
-            commandHeader
-
-            ScrollView {
-                LazyVStack(spacing: 6) {
-                    ForEach(model.commandRows) { row in
-                        CommandRowView(
-                            model: model,
-                            row: row,
-                            isSelected: row.id == model.selectedGesture
-                        )
-                        .onTapGesture { model.selectedGesture = row.id }
-                    }
-                }
-                .padding(8)
+        Form {
+            Section {
+                applicationSegmentedPicker
+            } header: {
+                Text(L("Application"))
             }
-            .frame(minHeight: 310)
-            .liquidGlassSurface()
 
-            HStack(spacing: 10) {
-                Button(L("Add...")) { model.beginAdd() }
-                    .disabled(!model.canAdd)
-                    .liquidGlassButton(prominent: true)
+            Section {
+                commandHeader
+                    .listRowSeparator(.hidden)
+                ForEach(model.commandRows) { row in
+                    CommandRowView(model: model, row: row)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.selectedGesture = row.id }
+                    .listRowBackground(row.id == model.selectedGesture ? Color.accentColor.opacity(0.16) : Color.clear)
+                }
+            } header: {
+                Text(deviceTitle(model.selectedDevice))
+            }
+        }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(L("Restore Defaults")) { model.isShowingRestoreAlert = true }
                 Button(L("Delete")) { model.deleteSelectedCommand() }
                     .disabled(!model.canDelete)
-                    .liquidGlassButton()
-                Button(L("Restore Defaults")) { model.isShowingRestoreAlert = true }
-                    .liquidGlassButton()
+                Button(L("Add")) { model.beginAdd() }
+                    .disabled(!model.canAdd)
+                    .buttonStyle(.borderedProminent)
             }
         }
         .sheet(isPresented: $model.isShowingAddSheet) {
@@ -598,34 +599,21 @@ struct GestureSettingsView: View {
 
     private var commandHeader: some View {
         HStack {
-            Text(L("On")).frame(width: 44, alignment: .leading)
             Text(L("Gesture")).frame(maxWidth: .infinity, alignment: .leading)
-            Text(L("Command")).frame(width: 260, alignment: .leading)
+            Text(L("Command")).frame(width: 260, alignment: .trailing)
+            Text(L("On")).frame(width: 44, alignment: .trailing)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 12)
     }
 }
 
 struct CommandRowView: View {
     @ObservedObject var model: PreferencesViewModel
     var row: PreferencesViewModel.CommandRow
-    var isSelected: Bool
 
     var body: some View {
         HStack(spacing: 12) {
-            Toggle("", isOn: Binding(
-                get: { row.command.isEnabled },
-                set: { value in
-                    var command = row.command
-                    command.isEnabled = value
-                    model.update(command)
-                }
-            ))
-            .labelsHidden()
-            .frame(width: 44)
-
             Text(row.command.gesture)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -644,19 +632,26 @@ struct CommandRowView: View {
                         Text(command).tag(command)
                     }
                 }
-                .frame(width: 260)
+                .frame(width: 260, alignment: .trailing)
             } else {
                 Text(row.command.command)
                     .foregroundStyle(.secondary)
-                    .frame(width: 260, alignment: .leading)
+                    .lineLimit(1)
+                    .frame(width: 260, alignment: .trailing)
             }
+
+            Toggle("", isOn: Binding(
+                get: { row.command.isEnabled },
+                set: { value in
+                    var command = row.command
+                    command.isEnabled = value
+                    model.update(command)
+                }
+            ))
+            .labelsHidden()
+            .frame(width: 44, alignment: .trailing)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.035))
-        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -736,19 +731,17 @@ struct AddGestureSheet: View {
 
             HStack {
                 Button(L("Cancel")) { dismiss() }
-                    .liquidGlassButton()
                 Button(L("Add")) {
                     model.commitAdd()
                     dismiss()
                 }
                 .disabled(model.addGesture.isEmpty || (model.addMode == .shortcut && model.addShortcutText.isEmpty))
-                .liquidGlassButton(prominent: true)
+                .buttonStyle(.borderedProminent)
             }
             .frame(width: formWidth, alignment: .trailing)
         }
         .padding(28)
         .frame(width: formWidth + 56)
-        .liquidGlassCard()
     }
 
     private var selectedApplicationOption: PreferencesViewModel.ApplicationOption? {
@@ -1186,42 +1179,5 @@ private func settingsRow<Content: View>(
             .frame(width: labelWidth, alignment: .leading)
         content()
             .frame(width: controlWidth, alignment: .trailing)
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func liquidGlassCard() -> some View {
-        if #available(macOS 26.0, *) {
-            self
-                .padding(22)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-        } else {
-            self
-                .padding(22)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-    }
-
-    @ViewBuilder
-    func liquidGlassSurface() -> some View {
-        if #available(macOS 26.0, *) {
-            self.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        } else {
-            self.background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-    }
-
-    @ViewBuilder
-    func liquidGlassButton(prominent: Bool = false) -> some View {
-        if #available(macOS 26.0, *) {
-            if prominent {
-                self.buttonStyle(.glassProminent)
-            } else {
-                self.buttonStyle(.glass)
-            }
-        } else {
-            self.buttonStyle(.borderedProminent)
-        }
     }
 }

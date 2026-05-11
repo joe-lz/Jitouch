@@ -375,6 +375,15 @@ final class PreferencesViewModel: ObservableObject {
         finishSettingsChange()
     }
 
+    func updateSelectedCommandShortcut(text: String, modifierFlags: UInt64, keyCode: UInt16) {
+        guard var command = selectedCommand, text.isEmpty == false else { return }
+        command.command = text
+        command.isAction = false
+        command.modifierFlags = modifierFlags
+        command.keyCode = keyCode
+        update(command)
+    }
+
     func updateGeneral(_ update: (inout JitouchSettings) -> Void) {
         settingsStore.updateGeneralSettings(update)
         applyInterfaceSettings()
@@ -639,6 +648,12 @@ struct GestureSettingsView: View {
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
         .background(Color.clear)
+        .background {
+            SelectedGestureShortcutCapture(isActive: model.selectedGesture != nil && model.isShowingAddSheet == false) { text, flags, keyCode in
+                model.updateSelectedCommandShortcut(text: text, modifierFlags: flags, keyCode: keyCode)
+            }
+            .frame(width: 0, height: 0)
+        }
     }
 
     private var commandHeader: some View {
@@ -674,27 +689,22 @@ struct CommandRowView: View {
             gestureTitle
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if row.command.isAction {
-                Picker("", selection: Binding(
-                    get: { row.command.command },
-                    set: { value in
-                        var command = row.command
-                        command.command = value
-                        command.isAction = true
-                        model.update(command)
-                    }
-                )) {
-                    ForEach(model.commands, id: \.self) { command in
-                        Text(command).tag(command)
-                    }
+            Picker("", selection: Binding(
+                get: { row.command.isAction ? row.command.command : "-" },
+                set: { value in
+                    var command = row.command
+                    command.command = value
+                    command.isAction = true
+                    command.modifierFlags = 0
+                    command.keyCode = 0
+                    model.update(command)
                 }
-                .frame(width: GestureListLayout.commandWidth, alignment: .trailing)
-            } else {
-                Text("-")
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .frame(width: GestureListLayout.commandWidth, alignment: .trailing)
+            )) {
+                ForEach(model.commands, id: \.self) { command in
+                    Text(command).tag(command)
+                }
             }
+            .frame(width: GestureListLayout.commandWidth, alignment: .trailing)
 
             Text(row.command.isAction ? "-" : row.command.command)
                 .foregroundStyle(row.command.isAction ? .secondary : .primary)
@@ -1686,6 +1696,60 @@ struct GeneralSettingsView: View {
 
 }
 
+struct SelectedGestureShortcutCapture: NSViewRepresentable {
+    var isActive: Bool
+    var onShortcut: (String, UInt64, UInt16) -> Void
+
+    func makeNSView(context: Context) -> SelectedGestureShortcutCaptureView {
+        let view = SelectedGestureShortcutCaptureView()
+        view.onShortcut = onShortcut
+        return view
+    }
+
+    func updateNSView(_ nsView: SelectedGestureShortcutCaptureView, context: Context) {
+        nsView.isActive = isActive
+        nsView.onShortcut = onShortcut
+        guard isActive else { return }
+
+        DispatchQueue.main.async {
+            if nsView.window?.firstResponder !== nsView {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        }
+    }
+}
+
+final class SelectedGestureShortcutCaptureView: NSView {
+    var isActive = false
+    var onShortcut: ((String, UInt64, UInt16) -> Void)?
+
+    override var acceptsFirstResponder: Bool { true }
+    override var canBecomeKeyView: Bool { true }
+    override var needsPanelToBecomeKey: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        guard isActive else {
+            super.keyDown(with: event)
+            return
+        }
+        record(event)
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard isActive else { return false }
+        record(event)
+        return true
+    }
+
+    private func record(_ event: NSEvent) {
+        let flags = UInt64(event.modifierFlags.intersection(.deviceIndependentFlagsMask).rawValue)
+        let keyCode = UInt16(event.keyCode)
+        let text = ShortcutDisplayFormatter.displayString(for: event)
+        guard text.isEmpty == false else { return }
+        onShortcut?(text, flags, keyCode)
+    }
+}
+
 struct ShortcutRecorder: NSViewRepresentable {
     @Binding var text: String
     @Binding var modifierFlags: UInt64
@@ -1748,12 +1812,14 @@ final class ShortcutRecorderField: NSTextField {
     private func record(_ event: NSEvent) {
         let flags = UInt64(event.modifierFlags.intersection(.deviceIndependentFlagsMask).rawValue)
         let keyCode = UInt16(event.keyCode)
-        let text = Self.displayString(for: event)
+        let text = ShortcutDisplayFormatter.displayString(for: event)
         stringValue = text
         onChange?(text, flags, keyCode)
     }
+}
 
-    private static func displayString(for event: NSEvent) -> String {
+private enum ShortcutDisplayFormatter {
+    static func displayString(for event: NSEvent) -> String {
         var parts: [String] = []
         if event.modifierFlags.contains(.control) { parts.append("^") }
         if event.modifierFlags.contains(.option) { parts.append("⌥") }

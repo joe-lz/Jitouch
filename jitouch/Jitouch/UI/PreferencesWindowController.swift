@@ -125,6 +125,13 @@ final class PreferencesViewModel: ObservableObject {
         var id: String { application }
     }
 
+    struct AddGestureOption: Identifiable {
+        var gesture: String
+        var isAvailable: Bool
+
+        var id: String { gesture }
+    }
+
     private let settingsStore: SettingsStore
     private let onChange: () -> Void
 
@@ -329,7 +336,7 @@ final class PreferencesViewModel: ObservableObject {
     }
 
     func commitAdd() {
-        guard addGesture.isEmpty == false else { return }
+        guard addGesture.isEmpty == false, isAddGestureAvailable(addGesture) else { return }
         let isAction = addMode == .action
         let command = GestureCommand(
             gesture: addGesture,
@@ -388,6 +395,17 @@ final class PreferencesViewModel: ObservableObject {
 
     func availableAddGestures() -> [String] {
         settingsStore.availableGestures(for: selectedDevice, application: addApplication)
+    }
+
+    func addGestureOptions() -> [AddGestureOption] {
+        let availableGestures = Set(settingsStore.availableGestures(for: selectedDevice, application: addApplication))
+        return settingsStore.gestureCatalog(for: selectedDevice).map {
+            AddGestureOption(gesture: $0, isAvailable: availableGestures.contains($0))
+        }
+    }
+
+    func isAddGestureAvailable(_ gesture: String) -> Bool {
+        settingsStore.availableGestures(for: selectedDevice, application: addApplication).contains(gesture)
     }
 
     func displayName(for application: String) -> String {
@@ -1117,7 +1135,7 @@ struct AddGestureSheet: View {
             settingsRow(L("Gesture"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
                 AddGesturePicker(
                     selection: $model.addGesture,
-                    gestures: model.availableAddGestures(),
+                    options: model.addGestureOptions(),
                     device: model.selectedDevice,
                     width: controlWidth
                 )
@@ -1165,7 +1183,11 @@ struct AddGestureSheet: View {
                     model.commitAdd()
                     dismiss()
                 }
-                .disabled(model.addGesture.isEmpty || (model.addMode == .shortcut && model.addShortcutText.isEmpty))
+                .disabled(
+                    model.addGesture.isEmpty ||
+                    model.isAddGestureAvailable(model.addGesture) == false ||
+                    (model.addMode == .shortcut && model.addShortcutText.isEmpty)
+                )
                 .buttonStyle(.borderedProminent)
             }
             .frame(width: formWidth, alignment: .trailing)
@@ -1270,7 +1292,7 @@ struct AddGestureSheet: View {
 
 struct AddGesturePicker: View {
     @Binding var selection: String
-    let gestures: [String]
+    let options: [PreferencesViewModel.AddGestureOption]
     let device: GestureDevice
     let width: CGFloat
     @State private var isShowingPopover = false
@@ -1278,7 +1300,7 @@ struct AddGesturePicker: View {
 
     var body: some View {
         Button {
-            hoveredGesture = selection.isEmpty ? gestures.first : selection
+            hoveredGesture = selection.isEmpty ? firstPreviewGesture : selection
             isShowingPopover = true
         } label: {
             HStack(spacing: 8) {
@@ -1298,8 +1320,8 @@ struct AddGesturePicker: View {
             HStack(spacing: 14) {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 2) {
-                        ForEach(gestures, id: \.self) { gesture in
-                            gestureRow(gesture)
+                        ForEach(options) { option in
+                            gestureRow(option)
                         }
                     }
                     .padding(6)
@@ -1312,37 +1334,39 @@ struct AddGesturePicker: View {
             }
             .padding(12)
             .onAppear {
-                hoveredGesture = selection.isEmpty ? gestures.first : selection
+                hoveredGesture = selection.isEmpty ? firstPreviewGesture : selection
             }
         }
     }
 
-    private func gestureRow(_ gesture: String) -> some View {
-        Button {
-            selection = gesture
-            hoveredGesture = gesture
-            isShowingPopover = false
-        } label: {
-            HStack(spacing: 8) {
-                Text(gesture == selection ? "✓" : " ")
-                    .font(.body.weight(.semibold))
-                    .frame(width: 14)
-                Text(gesture)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(gesture == previewGesture ? Color.accentColor.opacity(0.16) : Color.clear)
-            }
+    private func gestureRow(_ option: PreferencesViewModel.AddGestureOption) -> some View {
+        HStack(spacing: 8) {
+            Text(option.gesture == selection ? "✓" : " ")
+                .font(.body.weight(.semibold))
+                .frame(width: 14)
+            Text(option.gesture)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .foregroundStyle(option.isAvailable ? Color.primary : Color.secondary.opacity(0.55))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(option.gesture == previewGesture ? Color.accentColor.opacity(0.16) : Color.clear)
+        }
+        .contentShape(Rectangle())
+        .opacity(option.isAvailable ? 1 : 0.58)
         .onHover { isHovering in
             if isHovering {
-                hoveredGesture = gesture
+                hoveredGesture = option.gesture
             }
+        }
+        .onTapGesture {
+            guard option.isAvailable else { return }
+            selection = option.gesture
+            hoveredGesture = option.gesture
+            isShowingPopover = false
         }
     }
 
@@ -1353,7 +1377,11 @@ struct AddGesturePicker: View {
         if selection.isEmpty == false {
             return selection
         }
-        return gestures.first ?? ""
+        return firstPreviewGesture
+    }
+
+    private var firstPreviewGesture: String {
+        options.first(where: \.isAvailable)?.gesture ?? options.first?.gesture ?? ""
     }
 }
 

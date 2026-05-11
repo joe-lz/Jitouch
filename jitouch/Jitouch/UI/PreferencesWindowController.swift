@@ -715,6 +715,7 @@ struct CommandRowView: View {
 struct GestureAnimationPreview: View {
     let gesture: String
     let device: GestureDevice
+    var showsBackground = true
     private let size = CGSize(width: 184, height: 132)
     private var sequence: GesturePreviewSequence {
         GesturePreviewSequence(gesture: gesture, device: device)
@@ -743,7 +744,11 @@ struct GestureAnimationPreview: View {
                 .frame(width: size.width)
         }
         .padding(14)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background {
+            if showsBackground {
+                Color(nsColor: .windowBackgroundColor)
+            }
+        }
     }
 
     private var deviceSurface: some View {
@@ -1329,7 +1334,7 @@ struct AddGesturePicker: View {
                 .frame(width: 250, height: 260)
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                GestureAnimationPreview(gesture: previewGesture, device: device)
+                GestureAnimationPreview(gesture: previewGesture, device: device, showsBackground: false)
                     .frame(width: 220)
             }
             .padding(12)

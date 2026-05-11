@@ -1441,6 +1441,15 @@ struct GeneralSettingsView: View {
             } header: {
                 Text(L("Magic Mouse"))
             }
+
+            Section {
+                generalRow(L("Current Version")) {
+                    Text(appVersionText)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(width: controlWidth, alignment: .trailing)
+                }
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
@@ -1620,6 +1629,22 @@ struct GeneralSettingsView: View {
             return .secondary
         case .disabled, .syncing:
             return .secondary
+        }
+    }
+
+    private var appVersionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+
+        switch (version?.isEmpty == false ? version : nil, build?.isEmpty == false ? build : nil) {
+        case let (version?, build?):
+            return "\(version) (\(build))"
+        case let (version?, nil):
+            return version
+        case let (nil, build?):
+            return build
+        default:
+            return "-"
         }
     }
 

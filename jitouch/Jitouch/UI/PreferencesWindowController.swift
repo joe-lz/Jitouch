@@ -140,6 +140,7 @@ final class PreferencesViewModel: ObservableObject {
     @Published var selectedGesture: String?
     @Published var isShowingAddSheet = false
     @Published var isShowingRestoreAlert = false
+    @Published var isShowingDeleteAlert = false
     @Published var generalSettings = JitouchSettings()
     @Published var iCloudSyncState = ICloudSyncState.disabled
 
@@ -617,7 +618,7 @@ struct GestureSettingsView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button(L("Restore Defaults")) { model.isShowingRestoreAlert = true }
-                    Button(L("Delete")) { model.deleteSelectedCommand() }
+                    Button(L("Delete")) { model.isShowingDeleteAlert = true }
                         .disabled(!model.canDelete)
                     Button(L("Add")) { model.beginAdd() }
                         .disabled(!model.canAdd)
@@ -632,6 +633,12 @@ struct GestureSettingsView: View {
                 Button(L("OK"), role: .destructive) { model.restoreDefaults() }
             } message: {
                 Text(String(format: L("Your current %@ gesture settings will be deleted."), deviceTitle(model.selectedDevice)))
+            }
+            .alert(L("Delete this gesture?"), isPresented: $model.isShowingDeleteAlert) {
+                Button(L("Cancel"), role: .cancel) {}
+                Button(L("Delete"), role: .destructive) { model.deleteSelectedCommand() }
+            } message: {
+                Text(L("This gesture will be removed from the current application."))
             }
     }
 

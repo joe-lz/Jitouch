@@ -11,6 +11,7 @@
 "Command" = "Command";
 "Current Version" = "Current Version";
 "Delete" = "Delete";
+"Delete this gesture?" = "Delete this gesture?";
 "Enable Jitouch" = "Enable Jitouch";
 "Enable Magic Mouse gestures" = "Enable Magic Mouse gestures";
 "Enable trackpad gestures" = "Enable trackpad gestures";
@@ -34,6 +35,7 @@
 "Show menu bar icon" = "Show menu bar icon";
 "Trackpad" = "Trackpad";
 "Type" = "Type";
+"This gesture will be removed from the current application." = "This gesture will be removed from the current application.";
 "Your current %@ gesture settings will be deleted." = "Your current %@ gesture settings will be deleted.";
 "Keyboard Shortcut" = "Keyboard Shortcut";
 "Chinese" = "Chinese";

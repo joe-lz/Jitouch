@@ -29,6 +29,8 @@ final class PreferencesWindowController: NSWindowController {
         )
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
+        window.toolbar = NSToolbar()
+        window.toolbar?.isVisible = false
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         super.init(window: window)
@@ -445,13 +447,19 @@ struct PreferencesRootView: View {
             switch model.selectedTab {
             case .trackpad:
                 GestureSettingsView(model: model)
-                    .padding(24)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
             case .magicMouse:
                 GestureSettingsView(model: model)
-                    .padding(24)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
             case .general:
                 GeneralSettingsView(model: model)
-                    .padding(24)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
             }
         }
         .frame(minWidth: 920, minHeight: 580)
@@ -803,12 +811,15 @@ struct AddGestureSheet: View {
 
 struct GeneralSettingsView: View {
     @ObservedObject var model: PreferencesViewModel
+    private let labelWidth: CGFloat = 220
+    private let controlWidth: CGFloat = 260
+    private let columnSpacing: CGFloat = 24
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             section(L("General")) {
-                Toggle(L("Enable Jitouch"), isOn: binding(\.isEnabled))
-                Toggle(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
+                switchRow(L("Enable Jitouch"), isOn: binding(\.isEnabled))
+                switchRow(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
                 slider(L("Click speed"), value: Binding(
                     get: { model.generalSettings.clickSpeed },
                     set: { newValue in model.updateGeneral { $0.clickSpeed = newValue } }
@@ -820,32 +831,38 @@ struct GeneralSettingsView: View {
             }
 
             section(L("Trackpad")) {
-                Toggle(L("Enable trackpad gestures"), isOn: binding(\.trackpadEnabled))
-                Picker(L("Handedness"), selection: Binding(
-                    get: { model.generalSettings.trackpadLeftHanded },
-                    set: { value in model.updateGeneral { $0.trackpadLeftHanded = value } }
-                )) {
-                    Text(L("Right")).tag(false)
-                    Text(L("Left")).tag(true)
+                switchRow(L("Enable trackpad gestures"), isOn: binding(\.trackpadEnabled))
+                generalRow(L("Handedness")) {
+                    Picker("", selection: Binding(
+                        get: { model.generalSettings.trackpadLeftHanded },
+                        set: { value in model.updateGeneral { $0.trackpadLeftHanded = value } }
+                    )) {
+                        Text(L("Right")).tag(false)
+                        Text(L("Left")).tag(true)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: controlWidth)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
             }
 
             section(L("Magic Mouse")) {
-                Toggle(L("Enable Magic Mouse gestures"), isOn: binding(\.magicMouseEnabled))
-                Picker(L("Handedness"), selection: Binding(
-                    get: { model.generalSettings.magicMouseLeftHanded },
-                    set: { value in model.updateGeneral { $0.magicMouseLeftHanded = value } }
-                )) {
-                    Text(L("Right")).tag(false)
-                    Text(L("Left")).tag(true)
+                switchRow(L("Enable Magic Mouse gestures"), isOn: binding(\.magicMouseEnabled))
+                generalRow(L("Handedness")) {
+                    Picker("", selection: Binding(
+                        get: { model.generalSettings.magicMouseLeftHanded },
+                        set: { value in model.updateGeneral { $0.magicMouseLeftHanded = value } }
+                    )) {
+                        Text(L("Right")).tag(false)
+                        Text(L("Left")).tag(true)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: controlWidth)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func binding(_ keyPath: WritableKeyPath<JitouchSettings, Bool>) -> Binding<Bool> {
@@ -856,10 +873,33 @@ struct GeneralSettingsView: View {
     }
 
     private func slider(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
-        HStack {
-            Text(label).frame(width: 190, alignment: .leading)
-            Slider(value: value, in: range).frame(width: 240)
+        generalRow(label) {
+            Slider(value: value, in: range)
+                .frame(width: controlWidth)
         }
+    }
+
+    private func switchRow(_ label: String, isOn: Binding<Bool>) -> some View {
+        generalRow(label) {
+            HStack {
+                Spacer()
+                Toggle("", isOn: isOn)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            .frame(width: controlWidth)
+        }
+    }
+
+    private func generalRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: columnSpacing) {
+            Text(label)
+                .frame(width: labelWidth, alignment: .leading)
+            Spacer(minLength: columnSpacing)
+            content()
+                .frame(width: controlWidth, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -867,6 +907,7 @@ struct GeneralSettingsView: View {
             Text(title).font(.headline)
             content()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 4)
     }
 }

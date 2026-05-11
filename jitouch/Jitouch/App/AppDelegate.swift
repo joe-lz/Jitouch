@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         settingsStore.load()
+        applyInterfaceSettings()
         statusBarController.delegate = self
         statusBarController.reload()
         requestAccessibilityTrustIfNeeded()
@@ -52,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func settingsUpdated(_ notification: Notification) {
         settingsStore.load(from: notification.userInfo)
+        applyInterfaceSettings()
         statusBarController.reload()
         gestureController.reload()
     }
@@ -63,6 +65,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func requestAccessibilityTrustIfNeeded() {
         let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    private func applyInterfaceSettings() {
+        AppLocalization.currentLanguage = settingsStore.settings.appLanguage
+        NSApp.appearance = settingsStore.settings.themeMode.nsAppearance
     }
 }
 
@@ -92,6 +99,7 @@ extension AppDelegate: StatusBarControllerDelegate {
 
 extension AppDelegate: PreferencesWindowControllerDelegate {
     func preferencesWindowControllerDidChangeSettings(_ controller: PreferencesWindowController) {
+        applyInterfaceSettings()
         statusBarController.reload()
         gestureController.reload()
     }

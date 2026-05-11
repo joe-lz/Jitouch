@@ -2,8 +2,37 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-private func L(_ key: String) -> String {
-    NSLocalizedString(key, comment: "")
+enum AppLocalization {
+    static var currentLanguage: AppLanguage = .system
+
+    static func localizedString(_ key: String) -> String {
+        guard
+            let identifier = currentLanguage.localizationIdentifier,
+            let path = Bundle.main.path(forResource: identifier, ofType: "lproj"),
+            let bundle = Bundle(path: path)
+        else {
+            return NSLocalizedString(key, comment: "")
+        }
+
+        return bundle.localizedString(forKey: key, value: key, table: nil)
+    }
+}
+
+func L(_ key: String) -> String {
+    AppLocalization.localizedString(key)
+}
+
+extension AppThemeMode {
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system:
+            return nil
+        case .light:
+            return NSAppearance(named: .aqua)
+        case .dark:
+            return NSAppearance(named: .darkAqua)
+        }
+    }
 }
 
 protocol PreferencesWindowControllerDelegate: AnyObject {
@@ -244,6 +273,7 @@ final class PreferencesViewModel: ObservableObject {
 
     func reload() {
         refreshInstalledApplications()
+        applyInterfaceSettings()
         generalSettings = settingsStore.settings
         if applicationProfiles.contains(where: { $0.application == selectedApplication }) == false {
             selectedApplication = "All Applications"
@@ -324,8 +354,14 @@ final class PreferencesViewModel: ObservableObject {
 
     func updateGeneral(_ update: (inout JitouchSettings) -> Void) {
         settingsStore.updateGeneralSettings(update)
+        applyInterfaceSettings()
         generalSettings = settingsStore.settings
         finishSettingsChange()
+    }
+
+    private func applyInterfaceSettings() {
+        AppLocalization.currentLanguage = settingsStore.settings.appLanguage
+        NSApp.appearance = settingsStore.settings.themeMode.nsAppearance
     }
 
     func availableAddGestures() -> [String] {
@@ -820,6 +856,14 @@ struct GeneralSettingsView: View {
             Section {
                 switchRow(L("Enable Jitouch"), isOn: binding(\.isEnabled))
                 switchRow(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
+                languageRow(Binding(
+                    get: { model.generalSettings.appLanguage },
+                    set: { value in model.updateGeneral { $0.appLanguage = value } }
+                ))
+                themeRow(Binding(
+                    get: { model.generalSettings.themeMode },
+                    set: { value in model.updateGeneral { $0.themeMode = value } }
+                ))
                 slider(L("Click speed"), value: Binding(
                     get: { model.generalSettings.clickSpeed },
                     set: { newValue in model.updateGeneral { $0.clickSpeed = newValue } }
@@ -894,12 +938,38 @@ struct GeneralSettingsView: View {
         }
     }
 
+    private func languageRow(_ selection: Binding<AppLanguage>) -> some View {
+        generalRow(L("Language")) {
+            Picker("", selection: selection) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(languageTitle(language)).tag(language)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(width: controlWidth)
+        }
+    }
+
+    private func themeRow(_ selection: Binding<AppThemeMode>) -> some View {
+        generalRow(L("Theme Mode")) {
+            Picker("", selection: selection) {
+                ForEach(AppThemeMode.allCases) { themeMode in
+                    Text(themeTitle(themeMode)).tag(themeMode)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(width: controlWidth)
+        }
+    }
+
     private func handednessControl(_ selection: Binding<Bool>) -> some View {
         HStack(spacing: 0) {
-            handednessButton(title: L("Right"), isSelected: selection.wrappedValue == false) {
+            segmentedButton(title: L("Right"), isSelected: selection.wrappedValue == false) {
                 selection.wrappedValue = false
             }
-            handednessButton(title: L("Left"), isSelected: selection.wrappedValue == true) {
+            segmentedButton(title: L("Left"), isSelected: selection.wrappedValue == true) {
                 selection.wrappedValue = true
             }
         }
@@ -908,7 +978,7 @@ struct GeneralSettingsView: View {
         .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
 
-    private func handednessButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func segmentedButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.body.weight(.medium))
@@ -922,6 +992,28 @@ struct GeneralSettingsView: View {
                 .foregroundStyle(isSelected ? Color.white : Color.primary)
         }
         .buttonStyle(.plain)
+    }
+
+    private func languageTitle(_ language: AppLanguage) -> String {
+        switch language {
+        case .system:
+            return L("System")
+        case .english:
+            return L("English")
+        case .simplifiedChinese:
+            return L("Chinese")
+        }
+    }
+
+    private func themeTitle(_ themeMode: AppThemeMode) -> String {
+        switch themeMode {
+        case .system:
+            return L("System")
+        case .light:
+            return L("Light")
+        case .dark:
+            return L("Dark")
+        }
     }
 
     private func generalRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {

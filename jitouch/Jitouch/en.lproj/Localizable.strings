@@ -35,4 +35,16 @@
 "Type" = "Type";
 "Your current %@ gesture settings will be deleted." = "Your current %@ gesture settings will be deleted.";
 "Keyboard Shortcut" = "Keyboard Shortcut";
+"Chinese" = "Chinese";
+"English" = "English";
+"Language" = "Language";
+"Dark" = "Dark";
+"Light" = "Light";
+"Night Mode" = "Night Mode";
+"Open Preferences..." = "Open Preferences...";
+"Quit Jitouch" = "Quit Jitouch";
+"System" = "System";
+"Theme Mode" = "Theme Mode";
+"Turn Jitouch Off" = "Turn Jitouch Off";
+"Turn Jitouch On" = "Turn Jitouch On";
 "trackpad" = "trackpad";

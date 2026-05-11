@@ -7,6 +7,9 @@ final class SettingsStore {
         static let sensitivity = "Sensitivity"
         static let showIcon = "ShowIcon"
         static let logLevel = "LogLevel"
+        static let appLanguage = "AppLanguage"
+        static let nightMode = "NightMode"
+        static let themeMode = "ThemeMode"
         static let trackpadEnabled = "enTPAll"
         static let handed = "Handed"
         static let magicMouseEnabled = "enMMAll"
@@ -63,6 +66,8 @@ final class SettingsStore {
         setBool(settings.trackpadLeftHanded, forKey: Key.handed)
         setBool(settings.magicMouseEnabled, forKey: Key.magicMouseEnabled)
         setBool(settings.magicMouseLeftHanded, forKey: Key.magicMouseHanded)
+        setString(settings.appLanguage.rawValue, forKey: Key.appLanguage)
+        setString(settings.themeMode.rawValue, forKey: Key.themeMode)
         synchronize()
     }
 
@@ -228,6 +233,8 @@ final class SettingsStore {
         settings.clickSpeed = Self.double(dictionary[Key.clickSpeed], default: 0.25)
         settings.sensitivity = Self.double(dictionary[Key.sensitivity], default: 4.6666)
         settings.logLevel = Int(Self.double(dictionary[Key.logLevel], default: 0))
+        settings.appLanguage = AppLanguage(rawValue: dictionary[Key.appLanguage] as? String ?? "") ?? .system
+        settings.themeMode = Self.themeMode(from: dictionary)
         settings.trackpadEnabled = Self.bool(dictionary[Key.trackpadEnabled], default: true)
         settings.trackpadLeftHanded = Self.bool(dictionary[Key.handed], default: false)
         settings.magicMouseEnabled = Self.bool(dictionary[Key.magicMouseEnabled], default: true)
@@ -252,6 +259,11 @@ final class SettingsStore {
     private func setDouble(_ value: Double, forKey key: String) {
         rawSettings[key] = value
         CFPreferencesSetAppValue(key as CFString, NSNumber(value: value), appID)
+    }
+
+    private func setString(_ value: String, forKey key: String) {
+        rawSettings[key] = value
+        CFPreferencesSetAppValue(key as CFString, value as CFString, appID)
     }
 
     private func synchronize() {
@@ -304,6 +316,15 @@ final class SettingsStore {
             return number.doubleValue
         }
         return defaultValue
+    }
+
+    private static func themeMode(from dictionary: [String: Any]) -> AppThemeMode {
+        if let rawValue = dictionary[Key.themeMode] as? String,
+           let themeMode = AppThemeMode(rawValue: rawValue) {
+            return themeMode
+        }
+
+        return bool(dictionary[Key.nightMode], default: false) ? .dark : .system
     }
 }
 
@@ -376,6 +397,8 @@ private enum DefaultsFactory {
             "ShowIcon": 1,
             "Revision": 20240427,
             "LogLevel": 0,
+            "AppLanguage": AppLanguage.system.rawValue,
+            "ThemeMode": AppThemeMode.system.rawValue,
             "enTPAll": 1,
             "Handed": 0,
             "enMMAll": 1,

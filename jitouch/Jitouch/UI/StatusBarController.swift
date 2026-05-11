@@ -36,11 +36,11 @@ final class StatusBarController: NSObject {
 
     private func makeMenu() -> NSMenu {
         let menu = NSMenu(title: "Jitouch")
-        let toggleTitle = settingsStore.settings.isEnabled ? "Turn Jitouch Off" : "Turn Jitouch On"
+        let toggleTitle = settingsStore.settings.isEnabled ? L("Turn Jitouch Off") : L("Turn Jitouch On")
         menu.addItem(NSMenuItem(title: toggleTitle, action: #selector(toggleEnabled), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Open Preferences...", action: #selector(openPreferences), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: L("Open Preferences..."), action: #selector(openPreferences), keyEquivalent: ""))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Jitouch", action: #selector(quit), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: L("Quit Jitouch"), action: #selector(quit), keyEquivalent: ""))
 
         for item in menu.items {
             item.target = self

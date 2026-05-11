@@ -35,4 +35,16 @@
 "Type" = "类型";
 "Your current %@ gesture settings will be deleted." = "当前 %@ 手势设置将被删除。";
 "Keyboard Shortcut" = "键盘快捷键";
+"Chinese" = "中文";
+"English" = "英文";
+"Language" = "语言";
+"Dark" = "深色";
+"Light" = "浅色";
+"Night Mode" = "夜间模式";
+"Open Preferences..." = "打开设置...";
+"Quit Jitouch" = "退出 Jitouch";
+"System" = "跟随系统";
+"Theme Mode" = "主题模式";
+"Turn Jitouch Off" = "关闭 Jitouch";
+"Turn Jitouch On" = "开启 Jitouch";
 "trackpad" = "妙控板";

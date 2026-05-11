@@ -1,5 +1,32 @@
 import Foundation
 
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case system
+    case english
+    case simplifiedChinese
+
+    var id: String { rawValue }
+
+    var localizationIdentifier: String? {
+        switch self {
+        case .system:
+            return nil
+        case .english:
+            return "en"
+        case .simplifiedChinese:
+            return "zh-Hans"
+        }
+    }
+}
+
+enum AppThemeMode: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+}
+
 struct GestureCommand: Equatable {
     var gesture: String
     var command: String
@@ -103,6 +130,8 @@ struct JitouchSettings {
     var clickSpeed: TimeInterval = 0.25
     var sensitivity: Double = 4.6666
     var logLevel = 0
+    var appLanguage: AppLanguage = .system
+    var themeMode: AppThemeMode = .system
 
     var trackpadEnabled = true
     var trackpadLeftHanded = false

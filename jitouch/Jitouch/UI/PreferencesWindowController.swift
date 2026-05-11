@@ -642,15 +642,25 @@ struct GestureSettingsView: View {
     }
 
     private var commandHeader: some View {
-        HStack {
+        HStack(spacing: GestureListLayout.columnSpacing) {
             Text(L("Gesture")).frame(maxWidth: .infinity, alignment: .leading)
-            Text(L("Command")).frame(width: 220, alignment: .trailing)
-            Text(L("Keyboard Shortcut")).frame(width: 180, alignment: .trailing)
-            Text(L("On")).frame(width: 44, alignment: .trailing)
+            Text(L("Command")).frame(width: GestureListLayout.commandWidth, alignment: .trailing)
+            Text(L("Keyboard Shortcut"))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(width: GestureListLayout.shortcutWidth, alignment: .trailing)
+            Text(L("On")).frame(width: GestureListLayout.toggleWidth, alignment: .trailing)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)
     }
+}
+
+private enum GestureListLayout {
+    static let columnSpacing: CGFloat = 12
+    static let commandWidth: CGFloat = 220
+    static let shortcutWidth: CGFloat = 96
+    static let toggleWidth: CGFloat = 44
 }
 
 struct CommandRowView: View {
@@ -660,7 +670,7 @@ struct CommandRowView: View {
     @State private var isShowingGesturePreview = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: GestureListLayout.columnSpacing) {
             gestureTitle
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -678,18 +688,19 @@ struct CommandRowView: View {
                         Text(command).tag(command)
                     }
                 }
-                .frame(width: 220, alignment: .trailing)
+                .frame(width: GestureListLayout.commandWidth, alignment: .trailing)
             } else {
                 Text("-")
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .frame(width: 220, alignment: .trailing)
+                    .frame(width: GestureListLayout.commandWidth, alignment: .trailing)
             }
 
             Text(row.command.isAction ? "-" : row.command.command)
                 .foregroundStyle(row.command.isAction ? .secondary : .primary)
                 .lineLimit(1)
-                .frame(width: 180, alignment: .trailing)
+                .truncationMode(.tail)
+                .frame(width: GestureListLayout.shortcutWidth, alignment: .trailing)
 
             Toggle("", isOn: Binding(
                 get: { row.command.isEnabled },
@@ -700,7 +711,7 @@ struct CommandRowView: View {
                 }
             ))
             .labelsHidden()
-            .frame(width: 44, alignment: .trailing)
+            .frame(width: GestureListLayout.toggleWidth, alignment: .trailing)
         }
         .contentShape(Rectangle())
         .padding(.horizontal, 8)

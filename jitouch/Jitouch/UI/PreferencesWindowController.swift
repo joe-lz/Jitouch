@@ -23,11 +23,12 @@ final class PreferencesWindowController: NSWindowController {
         self.settingsStore = settingsStore
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 980, height: 640),
-            styleMask: [.titled, .closable, .resizable],
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        window.title = L("Jitouch Gesture Settings")
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         super.init(window: window)
@@ -335,8 +336,8 @@ struct PreferencesRootView: View {
                     .padding(24)
             }
         }
-        .navigationTitle(L("Jitouch Gesture Settings"))
         .frame(minWidth: 920, minHeight: 580)
+        .ignoresSafeArea(.container, edges: .top)
         .background {
             LinearGradient(colors: [Color(nsColor: .windowBackgroundColor), Color.accentColor.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()

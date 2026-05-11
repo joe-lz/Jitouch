@@ -282,6 +282,10 @@ final class PreferencesViewModel: ObservableObject {
 
     func selectDevice(_ device: GestureDevice) {
         selectedTab = device == .trackpad ? .trackpad : .magicMouse
+        resetGestureSelection()
+    }
+
+    func resetGestureSelection() {
         selectedApplication = "All Applications"
         selectedGesture = nil
     }
@@ -472,7 +476,7 @@ struct PreferencesRootView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $model.selectedTab) {
+            List(selection: selectedTab) {
                 ForEach(PreferencesViewModel.Tab.allCases) { tab in
                     Label(tab.title, systemImage: sidebarIcon(for: tab))
                         .tag(tab)
@@ -515,6 +519,21 @@ struct PreferencesRootView: View {
         case .general:
             return "gearshape"
         }
+    }
+
+    private var selectedTab: Binding<PreferencesViewModel.Tab> {
+        Binding(
+            get: { model.selectedTab },
+            set: { tab in
+                model.selectedTab = tab
+                switch tab {
+                case .trackpad, .magicMouse:
+                    model.resetGestureSelection()
+                case .general:
+                    break
+                }
+            }
+        )
     }
 }
 

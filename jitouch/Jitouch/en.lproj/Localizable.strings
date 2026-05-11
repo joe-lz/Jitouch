@@ -36,12 +36,15 @@
 "Your current %@ gesture settings will be deleted." = "Your current %@ gesture settings will be deleted.";
 "Keyboard Shortcut" = "Keyboard Shortcut";
 "Chinese" = "Chinese";
+"Close Window" = "Close Window";
 "English" = "English";
+"File" = "File";
 "Language" = "Language";
 "Dark" = "Dark";
 "Light" = "Light";
 "Night Mode" = "Night Mode";
 "Open Preferences..." = "Open Preferences...";
+"Quit %@" = "Quit %@";
 "Quit Jitouch" = "Quit Jitouch";
 "System" = "System";
 "Theme Mode" = "Theme Mode";

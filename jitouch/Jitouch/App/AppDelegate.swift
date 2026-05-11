@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         settingsStore.load()
         applyInterfaceSettings()
+        installMainMenu()
         statusBarController.delegate = self
         statusBarController.reload()
         requestAccessibilityTrustIfNeeded()
@@ -25,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        LaunchAgentManager.unload()
         gestureController.stop()
     }
 
@@ -71,6 +73,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppLocalization.currentLanguage = settingsStore.settings.appLanguage
         NSApp.appearance = settingsStore.settings.themeMode.nsAppearance
     }
+
+    private func installMainMenu() {
+        let mainMenu = NSMenu()
+
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+
+        let appMenu = NSMenu()
+        appMenuItem.submenu = appMenu
+        appMenu.addItem(
+            NSMenuItem(
+                title: String(format: L("Quit %@"), ProcessInfo.processInfo.processName),
+                action: #selector(quitApplication),
+                keyEquivalent: "q"
+            )
+        )
+        appMenu.items.last?.target = self
+
+        let fileMenuItem = NSMenuItem()
+        mainMenu.addItem(fileMenuItem)
+
+        let fileMenu = NSMenu(title: L("File"))
+        fileMenuItem.submenu = fileMenu
+        fileMenu.addItem(
+            NSMenuItem(
+                title: L("Close Window"),
+                action: #selector(NSWindow.performClose(_:)),
+                keyEquivalent: "w"
+            )
+        )
+
+        NSApp.mainMenu = mainMenu
+    }
+
+    @objc private func quitApplication() {
+        NSApp.terminate(nil)
+    }
 }
 
 extension AppDelegate: StatusBarControllerDelegate {
@@ -92,7 +131,6 @@ extension AppDelegate: StatusBarControllerDelegate {
     }
 
     func statusBarControllerDidQuit(_ controller: StatusBarController) {
-        LaunchAgentManager.unload()
         NSApp.terminate(nil)
     }
 }

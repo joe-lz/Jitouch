@@ -1,40 +1,9 @@
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 
 private func L(_ key: String) -> String {
     NSLocalizedString(key, comment: "")
-}
-
-final class ShortcutRecorderField: NSTextField {
-    var capturedModifierFlags: UInt64 = 0
-    var capturedKeyCode: UInt16 = 0
-
-    override var acceptsFirstResponder: Bool {
-        true
-    }
-
-    override func keyDown(with event: NSEvent) {
-        capturedModifierFlags = UInt64(event.modifierFlags.intersection(.deviceIndependentFlagsMask).rawValue)
-        capturedKeyCode = UInt16(event.keyCode)
-        stringValue = Self.displayString(for: event)
-    }
-
-    func reset() {
-        capturedModifierFlags = 0
-        capturedKeyCode = 0
-        stringValue = ""
-    }
-
-    private static func displayString(for event: NSEvent) -> String {
-        var parts: [String] = []
-        if event.modifierFlags.contains(.control) { parts.append("^") }
-        if event.modifierFlags.contains(.option) { parts.append("⌥") }
-        if event.modifierFlags.contains(.shift) { parts.append("⇧") }
-        if event.modifierFlags.contains(.command) { parts.append("⌘") }
-        let key = event.charactersIgnoringModifiers?.uppercased() ?? ""
-        parts.append(key.isEmpty ? "Key \(event.keyCode)" : key)
-        return parts.joined()
-    }
 }
 
 protocol PreferencesWindowControllerDelegate: AnyObject {
@@ -45,29 +14,93 @@ final class PreferencesWindowController: NSWindowController {
     weak var delegate: PreferencesWindowControllerDelegate?
 
     private let settingsStore: SettingsStore
-    private let tabView = NSTabView()
-    private let deviceControl = NSSegmentedControl(labels: [L("Trackpad"), L("Magic Mouse")], trackingMode: .selectOne, target: nil, action: nil)
-    private let applicationControl = NSPopUpButton()
-    private let gesturesTable = NSTableView()
-    private let addButton = NSButton(title: L("Add..."), target: nil, action: nil)
-    private let deleteButton = NSButton(title: L("Delete"), target: nil, action: nil)
-    private let restoreDefaultsButton = NSButton(title: L("Restore Defaults"), target: nil, action: nil)
-    private let addGesturePanel = NSPanel(
-        contentRect: NSRect(x: 0, y: 0, width: 520, height: 330),
-        styleMask: [.titled],
-        backing: .buffered,
-        defer: false
-    )
-    private let addPanelTitle = NSTextField(labelWithString: L("Add Gesture"))
-    private let addApplicationPopup = NSPopUpButton()
-    private let addGesturePopup = NSPopUpButton()
-    private let addModeControl = NSSegmentedControl(labels: [L("Action"), L("Keyboard Shortcut")], trackingMode: .selectOne, target: nil, action: nil)
-    private let addCommandPopup = NSPopUpButton()
-    private let shortcutField = ShortcutRecorderField()
-    private let addEnabledSwitch = NSSwitch()
-    private var addApplicationPaths: [String: String] = [:]
-    private var selectedApplicationPath = ""
-    private let commands = [
+    private lazy var model = PreferencesViewModel(settingsStore: settingsStore) { [weak self] in
+        guard let self else { return }
+        self.delegate?.preferencesWindowControllerDidChangeSettings(self)
+    }
+
+    init(settingsStore: SettingsStore) {
+        self.settingsStore = settingsStore
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 980, height: 640),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = L("Jitouch Gesture Settings")
+        window.isReleasedWhenClosed = false
+        window.isRestorable = false
+        super.init(window: window)
+        window.contentViewController = NSHostingController(rootView: PreferencesRootView(model: model))
+    }
+
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func show() {
+        model.reload()
+        showWindow(nil)
+        window?.center()
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+@MainActor
+final class PreferencesViewModel: ObservableObject {
+    enum Tab: String, CaseIterable, Identifiable {
+        case gestures
+        case general
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .gestures: L("Gestures")
+            case .general: L("General")
+            }
+        }
+    }
+
+    enum AddMode: String, CaseIterable, Identifiable {
+        case action
+        case shortcut
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .action: L("Action")
+            case .shortcut: L("Keyboard Shortcut")
+            }
+        }
+    }
+
+    struct CommandRow: Identifiable, Equatable {
+        var command: GestureCommand
+        var id: String { command.gesture }
+    }
+
+    private let settingsStore: SettingsStore
+    private let onChange: () -> Void
+
+    @Published var selectedTab: Tab = .gestures
+    @Published var selectedDevice: GestureDevice = .trackpad
+    @Published var selectedApplication = "All Applications"
+    @Published var selectedGesture: String?
+    @Published var isShowingAddSheet = false
+    @Published var isShowingRestoreAlert = false
+    @Published var generalSettings = JitouchSettings()
+
+    @Published var addApplication = "All Applications"
+    @Published var addGesture = ""
+    @Published var addMode: AddMode = .action
+    @Published var addCommand = "-"
+    @Published var addShortcutText = ""
+    @Published var addShortcutFlags: UInt64 = 0
+    @Published var addShortcutKeyCode: UInt16 = 0
+    @Published var addEnabled = true
+    @Published private var temporaryApplicationPaths: [String: String] = [:]
+
+    let commands = [
         "-",
         "Move / Resize",
         "Next Tab",
@@ -109,631 +142,600 @@ final class PreferencesWindowController: NSWindowController {
         "Brightness Up",
         "Brightness Down"
     ]
-    private let enabledSwitch = NSSwitch()
-    private let showIconSwitch = NSSwitch()
-    private let trackpadSwitch = NSSwitch()
-    private let trackpadHandedControl = NSSegmentedControl(labels: [L("Right"), L("Left")], trackingMode: .selectOne, target: nil, action: nil)
-    private let magicMouseSwitch = NSSwitch()
-    private let magicMouseHandedControl = NSSegmentedControl(labels: [L("Right"), L("Left")], trackingMode: .selectOne, target: nil, action: nil)
-    private let clickSpeedSlider = NSSlider(value: 0.25, minValue: 0.05, maxValue: 0.5, target: nil, action: nil)
-    private let sensitivitySlider = NSSlider(value: 4.6666, minValue: 1.0, maxValue: 8.0, target: nil, action: nil)
 
-    init(settingsStore: SettingsStore) {
+    init(settingsStore: SettingsStore, onChange: @escaping () -> Void) {
         self.settingsStore = settingsStore
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 700, height: 520),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = L("Jitouch Gesture Settings")
-        window.isReleasedWhenClosed = false
-        window.isRestorable = false
-        super.init(window: window)
-        window.contentView = makeContentView()
-        configureAddGesturePanel()
-        reloadControls()
+        self.onChange = onChange
+        reload()
     }
 
-    required init?(coder: NSCoder) {
-        nil
+    var deviceOptions: [GestureDevice] {
+        [.trackpad, .magicMouse]
     }
 
-    func show() {
-        reloadControls()
-        showWindow(nil)
-        window?.center()
-        NSApp.activate(ignoringOtherApps: true)
+    var applicationProfiles: [AppGestureCommands] {
+        settingsStore.applicationProfiles(for: selectedDevice)
     }
 
-    private func makeContentView() -> NSView {
-        let content = NSView()
-        tabView.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(tabView)
-
-        let gesturesItem = NSTabViewItem(identifier: "Gestures")
-        gesturesItem.label = L("Gestures")
-        gesturesItem.view = makeGesturesView()
-        tabView.addTabViewItem(gesturesItem)
-
-        let generalItem = NSTabViewItem(identifier: "General")
-        generalItem.label = L("General")
-        generalItem.view = makeGeneralView()
-        tabView.addTabViewItem(generalItem)
-        tabView.selectTabViewItem(gesturesItem)
-
-        NSLayoutConstraint.activate([
-            tabView.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-            tabView.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-            tabView.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
-            tabView.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -16)
-        ])
-
-        return content
+    var applicationOptions: [String] {
+        applicationProfiles.map { displayName(for: $0.application) }
     }
 
-    private func makeGeneralView() -> NSView {
-        let content = NSView()
+    var commandRows: [CommandRow] {
+        settingsStore.commands(for: selectedDevice, application: selectedApplication)
+            .map { CommandRow(command: $0) }
+    }
 
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 14
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(stack)
+    var selectedCommand: GestureCommand? {
+        guard let selectedGesture else { return nil }
+        return commandRows.first { $0.command.gesture == selectedGesture }?.command
+    }
 
-        stack.addArrangedSubview(sectionTitle(L("General")))
-        stack.addArrangedSubview(row(L("Enable Jitouch"), enabledSwitch))
-        stack.addArrangedSubview(row(L("Show menu bar icon"), showIconSwitch))
-        stack.addArrangedSubview(sliderRow(L("Click speed"), clickSpeedSlider))
-        stack.addArrangedSubview(sliderRow(L("Sensitivity"), sensitivitySlider))
+    var canAdd: Bool {
+        !settingsStore.availableGestures(for: selectedDevice, application: selectedApplication).isEmpty
+    }
 
-        stack.addArrangedSubview(sectionTitle(L("Trackpad")))
-        stack.addArrangedSubview(row(L("Enable trackpad gestures"), trackpadSwitch))
-        stack.addArrangedSubview(row(L("Handedness"), trackpadHandedControl))
+    var canDelete: Bool {
+        selectedCommand != nil
+    }
 
-        stack.addArrangedSubview(sectionTitle(L("Magic Mouse")))
-        stack.addArrangedSubview(row(L("Enable Magic Mouse gestures"), magicMouseSwitch))
-        stack.addArrangedSubview(row(L("Handedness"), magicMouseHandedControl))
-
-        for control in [enabledSwitch, showIconSwitch, trackpadSwitch, magicMouseSwitch] {
-            control.target = self
-            control.action = #selector(controlChanged)
+    func reload() {
+        generalSettings = settingsStore.settings
+        if applicationProfiles.contains(where: { $0.application == selectedApplication }) == false {
+            selectedApplication = "All Applications"
         }
-        for control in [trackpadHandedControl, magicMouseHandedControl] {
-            control.target = self
-            control.action = #selector(controlChanged)
-        }
-        for slider in [clickSpeedSlider, sensitivitySlider] {
-            slider.target = self
-            slider.action = #selector(controlChanged)
-        }
-
-        NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 22),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -22),
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 20),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: content.bottomAnchor, constant: -20)
-        ])
-
-        return content
     }
 
-    private func makeGesturesView() -> NSView {
-        let content = NSView()
-
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 12
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(stack)
-
-        deviceControl.selectedSegment = 0
-        deviceControl.target = self
-        deviceControl.action = #selector(deviceChanged)
-        let topRow = NSStackView()
-        topRow.orientation = .horizontal
-        topRow.alignment = .centerY
-        topRow.spacing = 12
-        topRow.addArrangedSubview(deviceControl)
-
-        applicationControl.target = self
-        applicationControl.action = #selector(applicationChanged)
-        applicationControl.widthAnchor.constraint(equalToConstant: 220).isActive = true
-        topRow.addArrangedSubview(applicationControl)
-        stack.addArrangedSubview(topRow)
-
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .bezelBorder
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.widthAnchor.constraint(equalToConstant: 640).isActive = true
-        scrollView.heightAnchor.constraint(equalToConstant: 340).isActive = true
-
-        gesturesTable.headerView = NSTableHeaderView()
-        gesturesTable.delegate = self
-        gesturesTable.dataSource = self
-        gesturesTable.usesAlternatingRowBackgroundColors = true
-        gesturesTable.rowHeight = 28
-        gesturesTable.allowsEmptySelection = true
-        gesturesTable.doubleAction = #selector(editSelectedCommand)
-        gesturesTable.target = self
-
-        let enabledColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("enabled"))
-        enabledColumn.title = L("On")
-        enabledColumn.width = 54
-        gesturesTable.addTableColumn(enabledColumn)
-
-        let gestureColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("gesture"))
-        gestureColumn.title = L("Gesture")
-        gestureColumn.width = 300
-        gesturesTable.addTableColumn(gestureColumn)
-
-        let commandColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("command"))
-        commandColumn.title = L("Command")
-        commandColumn.width = 270
-        gesturesTable.addTableColumn(commandColumn)
-
-        scrollView.documentView = gesturesTable
-        stack.addArrangedSubview(scrollView)
-
-        let buttonRow = NSStackView()
-        buttonRow.orientation = .horizontal
-        buttonRow.alignment = .centerY
-        buttonRow.spacing = 8
-
-        addButton.target = self
-        addButton.action = #selector(addCommand)
-        deleteButton.target = self
-        deleteButton.action = #selector(deleteCommand)
-        restoreDefaultsButton.target = self
-        restoreDefaultsButton.action = #selector(restoreDefaults)
-
-        buttonRow.addArrangedSubview(addButton)
-        buttonRow.addArrangedSubview(deleteButton)
-        buttonRow.addArrangedSubview(restoreDefaultsButton)
-        stack.addArrangedSubview(buttonRow)
-
-        NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 18),
-            stack.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -18),
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 18),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: content.bottomAnchor, constant: -18)
-        ])
-
-        return content
+    func selectDevice(_ device: GestureDevice) {
+        selectedDevice = device
+        selectedApplication = "All Applications"
+        selectedGesture = nil
     }
 
-    private func reloadControls() {
-        let settings = settingsStore.settings
-        enabledSwitch.state = settings.isEnabled ? .on : .off
-        showIconSwitch.state = settings.showsMenuBarIcon ? .on : .off
-        clickSpeedSlider.doubleValue = settings.clickSpeed
-        sensitivitySlider.doubleValue = settings.sensitivity
-        trackpadSwitch.state = settings.trackpadEnabled ? .on : .off
-        trackpadHandedControl.selectedSegment = settings.trackpadLeftHanded ? 1 : 0
-        magicMouseSwitch.state = settings.magicMouseEnabled ? .on : .off
-        magicMouseHandedControl.selectedSegment = settings.magicMouseLeftHanded ? 1 : 0
-        gesturesTable.reloadData()
-        updateGestureButtons()
-        reloadApplicationMenus()
+    func beginAdd() {
+        addApplication = selectedApplication
+        addMode = .action
+        addCommand = "-"
+        addEnabled = true
+        addShortcutText = ""
+        addShortcutFlags = 0
+        addShortcutKeyCode = 0
+        refreshAddGesture()
+        isShowingAddSheet = true
     }
 
-    @objc private func controlChanged() {
-        settingsStore.updateGeneralSettings { settings in
-            settings.isEnabled = enabledSwitch.state == .on
-            settings.showsMenuBarIcon = showIconSwitch.state == .on
-            settings.clickSpeed = clickSpeedSlider.doubleValue
-            settings.sensitivity = sensitivitySlider.doubleValue
-            settings.trackpadEnabled = trackpadSwitch.state == .on
-            settings.trackpadLeftHanded = trackpadHandedControl.selectedSegment == 1
-            settings.magicMouseEnabled = magicMouseSwitch.state == .on
-            settings.magicMouseLeftHanded = magicMouseHandedControl.selectedSegment == 1
-        }
-        settingsStore.postRuntimeSettingsChanged()
-        delegate?.preferencesWindowControllerDidChangeSettings(self)
+    func refreshAddGesture() {
+        let available = settingsStore.availableGestures(for: selectedDevice, application: addApplication)
+        addGesture = available.first ?? ""
     }
 
-    @objc private func deviceChanged() {
-        selectedApplicationPath = ""
-        reloadApplicationMenus()
-        gesturesTable.reloadData()
-        updateGestureButtons()
+    func addApplicationOptions() -> [String] {
+        applicationOptions + [L("Other...")]
     }
 
-    @objc private func applicationChanged() {
-        selectedApplicationPath = selectedApplicationProfile?.path ?? ""
-        gesturesTable.reloadData()
-        updateGestureButtons()
-    }
-
-    private var selectedDevice: GestureDevice {
-        deviceControl.selectedSegment == 0 ? .trackpad : .magicMouse
-    }
-
-    private var displayedCommands: [GestureCommand] {
-        settingsStore.commands(for: selectedDevice, application: selectedApplicationName)
-    }
-
-    private var selectedApplicationName: String {
-        applicationControl.titleOfSelectedItem == L("All Applications") ? "All Applications" : (applicationControl.titleOfSelectedItem ?? "All Applications")
-    }
-
-    private var selectedApplicationProfile: AppGestureCommands? {
-        settingsStore.applicationProfiles(for: selectedDevice).first { $0.application == selectedApplicationName }
-    }
-
-    private var selectedCommand: GestureCommand? {
-        let row = gesturesTable.selectedRow
-        guard row >= 0, row < displayedCommands.count else {
-            return nil
-        }
-        return displayedCommands[row]
-    }
-
-    private func updateGestureButtons() {
-        deleteButton.isEnabled = selectedCommand != nil
-        addButton.isEnabled = !settingsStore.availableGestures(for: selectedDevice, application: selectedApplicationName).isEmpty
-    }
-
-    private func reloadApplicationMenus() {
-        let profiles = settingsStore.applicationProfiles(for: selectedDevice)
-        applicationControl.removeAllItems()
-        addApplicationPopup.removeAllItems()
-        addApplicationPaths = ["All Applications": ""]
-
-        for profile in profiles {
-            let title = profile.application == "All Applications" ? L("All Applications") : profile.application
-            applicationControl.addItem(withTitle: title)
-            addApplicationPopup.addItem(withTitle: title)
-            addApplicationPaths[title] = profile.path
-        }
-        addApplicationPopup.menu?.addItem(.separator())
-        addApplicationPopup.addItem(withTitle: L("Other..."))
-
-        if profiles.contains(where: { $0.application == selectedApplicationName }) {
-            applicationControl.selectItem(withTitle: selectedApplicationName == "All Applications" ? L("All Applications") : selectedApplicationName)
+    func handleAddApplicationSelection(_ value: String) {
+        if value == L("Other...") {
+            chooseApplicationForAddSheet()
         } else {
-            applicationControl.selectItem(at: 0)
+            addApplication = normalizedApplicationName(value)
+            refreshAddGesture()
         }
     }
 
-    private func sectionTitle(_ text: String) -> NSTextField {
-        let field = NSTextField(labelWithString: text)
-        field.font = .boldSystemFont(ofSize: 13)
-        return field
-    }
-
-    private func row(_ label: String, _ control: NSView) -> NSView {
-        let row = NSStackView()
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 12
-        row.translatesAutoresizingMaskIntoConstraints = false
-
-        let labelField = NSTextField(labelWithString: label)
-        labelField.widthAnchor.constraint(equalToConstant: 190).isActive = true
-        control.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
-
-        row.addArrangedSubview(labelField)
-        row.addArrangedSubview(control)
-        return row
-    }
-
-    private func sliderRow(_ label: String, _ slider: NSSlider) -> NSView {
-        slider.widthAnchor.constraint(equalToConstant: 170).isActive = true
-        return row(label, slider)
-    }
-
-    private func configureAddGesturePanel() {
-        addGesturePanel.title = L("Add Gesture")
-        addGesturePanel.isReleasedWhenClosed = false
-        addGesturePanel.isRestorable = false
-
-        let content = NSView()
-        addGesturePanel.contentView = content
-
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 14
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(stack)
-
-        addPanelTitle.font = .boldSystemFont(ofSize: 17)
-        stack.addArrangedSubview(addPanelTitle)
-
-        addApplicationPopup.target = self
-        addApplicationPopup.action = #selector(addApplicationChanged)
-        addApplicationPopup.widthAnchor.constraint(equalToConstant: 280).isActive = true
-        addGesturePopup.widthAnchor.constraint(equalToConstant: 240).isActive = true
-        addModeControl.selectedSegment = 0
-        addModeControl.target = self
-        addModeControl.action = #selector(addModeChanged)
-        addModeControl.widthAnchor.constraint(equalToConstant: 280).isActive = true
-        addCommandPopup.widthAnchor.constraint(equalToConstant: 240).isActive = true
-        shortcutField.placeholderString = L("Press shortcut")
-        shortcutField.widthAnchor.constraint(equalToConstant: 240).isActive = true
-        addEnabledSwitch.state = .on
-
-        stack.addArrangedSubview(row(L("Application"), addApplicationPopup))
-        stack.addArrangedSubview(row(L("Gesture"), addGesturePopup))
-        stack.addArrangedSubview(row(L("Type"), addModeControl))
-        stack.addArrangedSubview(row(L("Command"), addCommandPopup))
-        stack.addArrangedSubview(row(L("Keyboard Shortcut"), shortcutField))
-        stack.addArrangedSubview(row(L("Enabled"), addEnabledSwitch))
-
-        let buttonRow = NSStackView()
-        buttonRow.orientation = .horizontal
-        buttonRow.alignment = .centerY
-        buttonRow.spacing = 8
-
-        let cancelButton = NSButton(title: L("Cancel"), target: self, action: #selector(cancelAddGesture))
-        let commitButton = NSButton(title: L("Add"), target: self, action: #selector(commitAddGesture))
-        commitButton.keyEquivalent = "\r"
-        buttonRow.addArrangedSubview(cancelButton)
-        buttonRow.addArrangedSubview(commitButton)
-        stack.addArrangedSubview(buttonRow)
-
-        NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -24),
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 22),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: content.bottomAnchor, constant: -22)
-        ])
-    }
-
-    private func populateAddGesturePanel() {
-        reloadApplicationMenus()
-        addApplicationPopup.selectItem(withTitle: selectedApplicationName == "All Applications" ? L("All Applications") : selectedApplicationName)
-        addGesturePopup.removeAllItems()
-        addGesturePopup.addItems(withTitles: settingsStore.availableGestures(for: selectedDevice, application: addApplicationName))
-        addCommandPopup.removeAllItems()
-        addCommandPopup.addItems(withTitles: commands)
-        addCommandPopup.selectItem(withTitle: "-")
-        addModeControl.selectedSegment = 0
-        shortcutField.reset()
-        addEnabledSwitch.state = .on
-        updateAddModeVisibility()
-    }
-
-    @objc private func addCommand() {
-        populateAddGesturePanel()
-        guard addGesturePopup.numberOfItems > 0, let window else {
-            return
-        }
-        window.beginSheet(addGesturePanel)
-    }
-
-    @objc private func cancelAddGesture() {
-        endAddGestureSheet()
-    }
-
-    @objc private func addApplicationChanged() {
-        if addApplicationPopup.titleOfSelectedItem == L("Other...") {
-            chooseApplicationForAddPanel()
-        }
-        addGesturePopup.removeAllItems()
-        addGesturePopup.addItems(withTitles: settingsStore.availableGestures(for: selectedDevice, application: addApplicationName))
-        updateGestureButtons()
-    }
-
-    @objc private func addModeChanged() {
-        updateAddModeVisibility()
-    }
-
-    @objc private func commitAddGesture() {
-        guard let gesture = addGesturePopup.titleOfSelectedItem else {
-            return
-        }
-        let isAction = addModeControl.selectedSegment == 0
+    func commitAdd() {
+        guard addGesture.isEmpty == false else { return }
+        let isAction = addMode == .action
         let command = GestureCommand(
-            gesture: gesture,
-            command: isAction ? (addCommandPopup.titleOfSelectedItem ?? "-") : shortcutField.stringValue,
+            gesture: addGesture,
+            command: isAction ? addCommand : addShortcutText,
             isAction: isAction,
-            modifierFlags: isAction ? 0 : shortcutField.capturedModifierFlags,
-            keyCode: isAction ? 0 : shortcutField.capturedKeyCode,
-            isEnabled: addEnabledSwitch.state == .on,
+            modifierFlags: isAction ? 0 : addShortcutFlags,
+            keyCode: isAction ? 0 : addShortcutKeyCode,
+            isEnabled: addEnabled,
             openFilePath: nil,
             openURL: nil
         )
-        settingsStore.updateCommand(command, device: selectedDevice, application: addApplicationName, path: addApplicationPath)
-        endAddGestureSheet()
-        reloadApplicationMenus()
-        applicationControl.selectItem(withTitle: addApplicationName == "All Applications" ? L("All Applications") : addApplicationName)
-        selectedApplicationPath = addApplicationPath
-        gesturesTable.reloadData()
-        selectCommand(gesture: gesture)
-        updateGestureButtons()
-        notifyGestureSettingsChanged()
+
+        settingsStore.updateCommand(command, device: selectedDevice, application: addApplication, path: path(for: addApplication))
+        selectedApplication = addApplication
+        selectedGesture = addGesture
+        finishSettingsChange()
+        isShowingAddSheet = false
     }
 
-    @objc private func deleteCommand() {
-        guard let command = selectedCommand else {
-            return
+    func deleteSelectedCommand() {
+        guard let selectedCommand else { return }
+        settingsStore.removeCommand(gesture: selectedCommand.gesture, device: selectedDevice, application: selectedApplication)
+        selectedGesture = nil
+        finishSettingsChange()
+    }
+
+    func restoreDefaults() {
+        settingsStore.restoreDefaultCommands(for: selectedDevice)
+        selectedApplication = "All Applications"
+        selectedGesture = nil
+        finishSettingsChange()
+    }
+
+    func update(_ command: GestureCommand) {
+        settingsStore.updateCommand(command, device: selectedDevice, application: selectedApplication, path: path(for: selectedApplication))
+        finishSettingsChange()
+    }
+
+    func updateGeneral(_ update: (inout JitouchSettings) -> Void) {
+        settingsStore.updateGeneralSettings(update)
+        generalSettings = settingsStore.settings
+        finishSettingsChange()
+    }
+
+    func availableAddGestures() -> [String] {
+        settingsStore.availableGestures(for: selectedDevice, application: addApplication)
+    }
+
+    func displayName(for application: String) -> String {
+        application == "All Applications" ? L("All Applications") : application
+    }
+
+    func normalizedApplicationName(_ displayName: String) -> String {
+        displayName == L("All Applications") ? "All Applications" : displayName
+    }
+
+    private func path(for application: String) -> String {
+        if let temporaryPath = temporaryApplicationPaths[application] {
+            return temporaryPath
         }
-        settingsStore.removeCommand(gesture: command.gesture, device: selectedDevice, application: selectedApplicationName)
-        gesturesTable.reloadData()
-        updateGestureButtons()
-        notifyGestureSettingsChanged()
+        return applicationProfiles.first { $0.application == application }?.path ?? ""
     }
 
-    @objc private func restoreDefaults() {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = L("Restore default settings?")
-        alert.informativeText = String(format: L("Your current %@ gesture settings will be deleted."), selectedDeviceName)
-        alert.addButton(withTitle: L("OK"))
-        alert.addButton(withTitle: L("Cancel"))
-        alert.beginSheetModal(for: window ?? addGesturePanel) { [weak self] response in
-            guard let self, response == .alertFirstButtonReturn else {
-                return
-            }
-            self.settingsStore.restoreDefaultCommands(for: self.selectedDevice)
-            self.gesturesTable.reloadData()
-            self.updateGestureButtons()
-            self.notifyGestureSettingsChanged()
-        }
-    }
-
-    @objc private func editSelectedCommand() {
-        guard let command = selectedCommand else {
-            return
-        }
-        let alert = NSAlert()
-        alert.messageText = command.gesture
-        alert.informativeText = L("Choose the command for this gesture.")
-        alert.addButton(withTitle: L("Save"))
-        alert.addButton(withTitle: L("Cancel"))
-
-        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 260, height: 26))
-        popup.addItems(withTitles: commands)
-        if commands.contains(command.command) {
-            popup.selectItem(withTitle: command.command)
-        } else {
-            popup.addItem(withTitle: command.command)
-            popup.selectItem(withTitle: command.command)
-        }
-        alert.accessoryView = popup
-        alert.beginSheetModal(for: window ?? addGesturePanel) { [weak self] response in
-            guard let self, response == .alertFirstButtonReturn else {
-                return
-            }
-            var updated = command
-            updated.command = popup.titleOfSelectedItem ?? "-"
-            updated.isAction = true
-            self.settingsStore.updateCommand(updated, device: self.selectedDevice, application: self.selectedApplicationName, path: self.selectedApplicationPath)
-            self.gesturesTable.reloadData()
-            self.selectCommand(gesture: updated.gesture)
-            self.notifyGestureSettingsChanged()
-        }
-    }
-
-    private var selectedDeviceName: String {
-        selectedDevice == .trackpad ? L("trackpad") : L("Magic Mouse")
-    }
-
-    private var addApplicationName: String {
-        let title = addApplicationPopup.titleOfSelectedItem ?? L("All Applications")
-        return title == L("All Applications") ? "All Applications" : title
-    }
-
-    private var addApplicationPath: String {
-        addApplicationPaths[addApplicationPopup.titleOfSelectedItem ?? L("All Applications")] ?? ""
-    }
-
-    private func updateAddModeVisibility() {
-        let usesAction = addModeControl.selectedSegment == 0
-        addCommandPopup.isEnabled = usesAction
-        shortcutField.isEnabled = !usesAction
-        if !usesAction {
-            addGesturePanel.makeFirstResponder(shortcutField)
-        }
-    }
-
-    private func chooseApplicationForAddPanel() {
+    private func chooseApplicationForAddSheet() {
         let panel = NSOpenPanel()
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.allowedContentTypes = [.applicationBundle]
         panel.allowsMultipleSelection = false
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
-
         let response = panel.runModal()
         guard response == .OK, let url = panel.url else {
-            addApplicationPopup.selectItem(withTitle: L("All Applications"))
+            addApplication = "All Applications"
+            refreshAddGesture()
             return
         }
-
-        let applicationName = url.deletingPathExtension().lastPathComponent
-        if addApplicationPopup.itemTitles.contains(applicationName) == false {
-            addApplicationPopup.insertItem(withTitle: applicationName, at: max(addApplicationPopup.numberOfItems - 1, 0))
-        }
-        addApplicationPaths[applicationName] = url.path
-        addApplicationPopup.selectItem(withTitle: applicationName)
+        let name = url.deletingPathExtension().lastPathComponent
+        temporaryApplicationPaths[name] = url.path
+        addApplication = name
+        refreshAddGesture()
     }
 
-    private func selectCommand(gesture: String) {
-        guard let row = displayedCommands.firstIndex(where: { $0.gesture == gesture }) else {
-            return
-        }
-        gesturesTable.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        gesturesTable.scrollRowToVisible(row)
-    }
-
-    private func notifyGestureSettingsChanged() {
+    private func finishSettingsChange() {
+        objectWillChange.send()
         settingsStore.postRuntimeSettingsChanged()
-        delegate?.preferencesWindowControllerDidChangeSettings(self)
+        onChange()
+    }
+}
+
+struct PreferencesRootView: View {
+    @ObservedObject var model: PreferencesViewModel
+
+    var body: some View {
+        NavigationSplitView {
+            List(selection: $model.selectedTab) {
+                ForEach(PreferencesViewModel.Tab.allCases) { tab in
+                    Label(tab.title, systemImage: sidebarIcon(for: tab))
+                        .tag(tab)
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
+        } detail: {
+            switch model.selectedTab {
+            case .gestures:
+                GestureSettingsView(model: model)
+                    .liquidGlassCard()
+                    .padding(24)
+            case .general:
+                GeneralSettingsView(model: model)
+                    .liquidGlassCard()
+                    .padding(24)
+            }
+        }
+        .navigationTitle(L("Jitouch Gesture Settings"))
+        .frame(minWidth: 920, minHeight: 580)
+        .background {
+            LinearGradient(colors: [Color(nsColor: .windowBackgroundColor), Color.accentColor.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+        }
     }
 
-    private func endAddGestureSheet() {
-        if let sheetParent = addGesturePanel.sheetParent {
-            sheetParent.endSheet(addGesturePanel)
-        } else {
-            window?.endSheet(addGesturePanel)
+    private func sidebarIcon(for tab: PreferencesViewModel.Tab) -> String {
+        switch tab {
+        case .gestures:
+            return "hand.tap"
+        case .general:
+            return "gearshape"
         }
     }
 }
 
-extension PreferencesWindowController: NSTableViewDataSource, NSTableViewDelegate {
-    func numberOfRows(in tableView: NSTableView) -> Int {
-        displayedCommands.count
-    }
+struct GestureSettingsView: View {
+    @ObservedObject var model: PreferencesViewModel
 
-    func tableViewSelectionDidChange(_ notification: Notification) {
-        updateGestureButtons()
-    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Picker("", selection: Binding(
+                    get: { model.selectedDevice },
+                    set: { model.selectDevice($0) }
+                )) {
+                    ForEach(model.deviceOptions, id: \.self) { device in
+                        Text(deviceTitle(device)).tag(device)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 230)
 
-    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        let command = displayedCommands[row]
-        guard let identifier = tableColumn?.identifier.rawValue else {
-            return nil
-        }
-
-        switch identifier {
-        case "enabled":
-            let checkbox = NSButton(checkboxWithTitle: "", target: self, action: #selector(gestureEnabledChanged(_:)))
-            checkbox.state = command.isEnabled ? .on : .off
-            checkbox.tag = row
-            return checkbox
-
-        case "gesture":
-            let field = NSTextField(labelWithString: command.gesture)
-            field.lineBreakMode = .byTruncatingTail
-            return field
-
-        case "command":
-            let popup = NSPopUpButton()
-            popup.addItems(withTitles: commands)
-            if commands.contains(command.command) {
-                popup.selectItem(withTitle: command.command)
-            } else {
-                popup.addItem(withTitle: command.command)
-                popup.selectItem(withTitle: command.command)
+                Picker("", selection: Binding(
+                    get: { model.displayName(for: model.selectedApplication) },
+                    set: { model.selectedApplication = model.normalizedApplicationName($0) }
+                )) {
+                    ForEach(model.applicationOptions, id: \.self) { app in
+                        Text(app).tag(app)
+                    }
+                }
+                .frame(width: 240)
             }
-            popup.target = self
-            popup.action = #selector(commandPopupChanged(_:))
-            popup.tag = row
-            return popup
 
-        default:
-            return nil
+            commandHeader
+
+            ScrollView {
+                LazyVStack(spacing: 6) {
+                    ForEach(model.commandRows) { row in
+                        CommandRowView(
+                            model: model,
+                            row: row,
+                            isSelected: row.id == model.selectedGesture
+                        )
+                        .onTapGesture { model.selectedGesture = row.id }
+                    }
+                }
+                .padding(8)
+            }
+            .frame(minHeight: 310)
+            .liquidGlassSurface()
+
+            HStack(spacing: 10) {
+                Button(L("Add...")) { model.beginAdd() }
+                    .disabled(!model.canAdd)
+                    .liquidGlassButton(prominent: true)
+                Button(L("Delete")) { model.deleteSelectedCommand() }
+                    .disabled(!model.canDelete)
+                    .liquidGlassButton()
+                Button(L("Restore Defaults")) { model.isShowingRestoreAlert = true }
+                    .liquidGlassButton()
+            }
+        }
+        .sheet(isPresented: $model.isShowingAddSheet) {
+            AddGestureSheet(model: model)
+        }
+        .alert(L("Restore default settings?"), isPresented: $model.isShowingRestoreAlert) {
+            Button(L("Cancel"), role: .cancel) {}
+            Button(L("OK"), role: .destructive) { model.restoreDefaults() }
+        } message: {
+            Text(String(format: L("Your current %@ gesture settings will be deleted."), deviceTitle(model.selectedDevice)))
         }
     }
 
-    @objc private func gestureEnabledChanged(_ sender: NSButton) {
-        var command = displayedCommands[sender.tag]
-        command.isEnabled = sender.state == .on
-        settingsStore.updateCommand(command, device: selectedDevice, application: selectedApplicationName, path: selectedApplicationPath)
-        delegate?.preferencesWindowControllerDidChangeSettings(self)
+    private var commandHeader: some View {
+        HStack {
+            Text(L("On")).frame(width: 44, alignment: .leading)
+            Text(L("Gesture")).frame(maxWidth: .infinity, alignment: .leading)
+            Text(L("Command")).frame(width: 260, alignment: .leading)
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+    }
+}
+
+struct CommandRowView: View {
+    @ObservedObject var model: PreferencesViewModel
+    var row: PreferencesViewModel.CommandRow
+    var isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Toggle("", isOn: Binding(
+                get: { row.command.isEnabled },
+                set: { value in
+                    var command = row.command
+                    command.isEnabled = value
+                    model.update(command)
+                }
+            ))
+            .labelsHidden()
+            .frame(width: 44)
+
+            Text(row.command.gesture)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if row.command.isAction {
+                Picker("", selection: Binding(
+                    get: { row.command.command },
+                    set: { value in
+                        var command = row.command
+                        command.command = value
+                        command.isAction = true
+                        model.update(command)
+                    }
+                )) {
+                    ForEach(model.commands, id: \.self) { command in
+                        Text(command).tag(command)
+                    }
+                }
+                .frame(width: 260)
+            } else {
+                Text(row.command.command)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 260, alignment: .leading)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.035))
+        }
+    }
+}
+
+struct AddGestureSheet: View {
+    @ObservedObject var model: PreferencesViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(L("Add Gesture"))
+                .font(.title2.weight(.semibold))
+
+            settingsRow(L("Application")) {
+                Picker("", selection: Binding(
+                    get: { model.displayName(for: model.addApplication) },
+                    set: { model.handleAddApplicationSelection($0) }
+                )) {
+                    ForEach(model.addApplicationOptions(), id: \.self) { app in
+                        Text(app).tag(app)
+                    }
+                }
+                .frame(width: 300)
+            }
+
+            settingsRow(L("Gesture")) {
+                Picker("", selection: $model.addGesture) {
+                    ForEach(model.availableAddGestures(), id: \.self) { gesture in
+                        Text(gesture).tag(gesture)
+                    }
+                }
+                .frame(width: 300)
+            }
+
+            settingsRow(L("Type")) {
+                Picker("", selection: $model.addMode) {
+                    ForEach(PreferencesViewModel.AddMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 300)
+            }
+
+            settingsRow(L("Command")) {
+                Picker("", selection: $model.addCommand) {
+                    ForEach(model.commands, id: \.self) { command in
+                        Text(command).tag(command)
+                    }
+                }
+                .frame(width: 300)
+                .disabled(model.addMode != .action)
+            }
+
+            settingsRow(L("Keyboard Shortcut")) {
+                ShortcutRecorder(
+                    text: $model.addShortcutText,
+                    modifierFlags: $model.addShortcutFlags,
+                    keyCode: $model.addShortcutKeyCode
+                )
+                .frame(width: 300, height: 28)
+                .disabled(model.addMode != .shortcut)
+            }
+
+            Toggle(L("Enabled"), isOn: $model.addEnabled)
+
+            HStack {
+                Button(L("Cancel")) { dismiss() }
+                    .liquidGlassButton()
+                Button(L("Add")) {
+                    model.commitAdd()
+                    dismiss()
+                }
+                .disabled(model.addGesture.isEmpty || (model.addMode == .shortcut && model.addShortcutText.isEmpty))
+                .liquidGlassButton(prominent: true)
+            }
+        }
+        .padding(28)
+        .frame(width: 560)
+        .liquidGlassCard()
+    }
+}
+
+struct GeneralSettingsView: View {
+    @ObservedObject var model: PreferencesViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            section(L("General")) {
+                Toggle(L("Enable Jitouch"), isOn: binding(\.isEnabled))
+                Toggle(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
+                slider(L("Click speed"), value: Binding(
+                    get: { model.generalSettings.clickSpeed },
+                    set: { newValue in model.updateGeneral { $0.clickSpeed = newValue } }
+                ), range: 0.05...0.5)
+                slider(L("Sensitivity"), value: Binding(
+                    get: { model.generalSettings.sensitivity },
+                    set: { newValue in model.updateGeneral { $0.sensitivity = newValue } }
+                ), range: 1...8)
+            }
+
+            section(L("Trackpad")) {
+                Toggle(L("Enable trackpad gestures"), isOn: binding(\.trackpadEnabled))
+                Picker(L("Handedness"), selection: Binding(
+                    get: { model.generalSettings.trackpadLeftHanded },
+                    set: { value in model.updateGeneral { $0.trackpadLeftHanded = value } }
+                )) {
+                    Text(L("Right")).tag(false)
+                    Text(L("Left")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 220)
+            }
+
+            section(L("Magic Mouse")) {
+                Toggle(L("Enable Magic Mouse gestures"), isOn: binding(\.magicMouseEnabled))
+                Picker(L("Handedness"), selection: Binding(
+                    get: { model.generalSettings.magicMouseLeftHanded },
+                    set: { value in model.updateGeneral { $0.magicMouseLeftHanded = value } }
+                )) {
+                    Text(L("Right")).tag(false)
+                    Text(L("Left")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 220)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @objc private func commandPopupChanged(_ sender: NSPopUpButton) {
-        var command = displayedCommands[sender.tag]
-        command.command = sender.titleOfSelectedItem ?? "-"
-        command.isAction = true
-        settingsStore.updateCommand(command, device: selectedDevice, application: selectedApplicationName, path: selectedApplicationPath)
-        delegate?.preferencesWindowControllerDidChangeSettings(self)
+    private func binding(_ keyPath: WritableKeyPath<JitouchSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { model.generalSettings[keyPath: keyPath] },
+            set: { value in model.updateGeneral { $0[keyPath: keyPath] = value } }
+        )
+    }
+
+    private func slider(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+        HStack {
+            Text(label).frame(width: 190, alignment: .leading)
+            Slider(value: value, in: range).frame(width: 240)
+        }
+    }
+
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(.headline)
+            content()
+        }
+        .padding(.bottom, 4)
+    }
+}
+
+struct ShortcutRecorder: NSViewRepresentable {
+    @Binding var text: String
+    @Binding var modifierFlags: UInt64
+    @Binding var keyCode: UInt16
+
+    func makeNSView(context: Context) -> ShortcutRecorderField {
+        let field = ShortcutRecorderField()
+        field.placeholderString = L("Press shortcut")
+        field.isEditable = false
+        field.isSelectable = false
+        field.onChange = { text, flags, keyCode in
+            self.text = text
+            self.modifierFlags = flags
+            self.keyCode = keyCode
+        }
+        return field
+    }
+
+    func updateNSView(_ nsView: ShortcutRecorderField, context: Context) {
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+    }
+}
+
+final class ShortcutRecorderField: NSTextField {
+    var onChange: ((String, UInt64, UInt16) -> Void)?
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        let flags = UInt64(event.modifierFlags.intersection(.deviceIndependentFlagsMask).rawValue)
+        let keyCode = UInt16(event.keyCode)
+        let text = Self.displayString(for: event)
+        stringValue = text
+        onChange?(text, flags, keyCode)
+    }
+
+    private static func displayString(for event: NSEvent) -> String {
+        var parts: [String] = []
+        if event.modifierFlags.contains(.control) { parts.append("^") }
+        if event.modifierFlags.contains(.option) { parts.append("⌥") }
+        if event.modifierFlags.contains(.shift) { parts.append("⇧") }
+        if event.modifierFlags.contains(.command) { parts.append("⌘") }
+        let key = event.charactersIgnoringModifiers?.uppercased() ?? ""
+        parts.append(key.isEmpty ? "Key \(event.keyCode)" : key)
+        return parts.joined()
+    }
+}
+
+private func deviceTitle(_ device: GestureDevice) -> String {
+    switch device {
+    case .trackpad: return L("Trackpad")
+    case .magicMouse: return L("Magic Mouse")
+    case .characterRecognition: return L("Character Recognition")
+    }
+}
+
+private func settingsRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+    HStack {
+        Text(label)
+            .font(.body.weight(.semibold))
+            .frame(width: 150, alignment: .leading)
+        content()
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func liquidGlassCard() -> some View {
+        if #available(macOS 26.0, *) {
+            self
+                .padding(22)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        } else {
+            self
+                .padding(22)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    @ViewBuilder
+    func liquidGlassSurface() -> some View {
+        if #available(macOS 26.0, *) {
+            self.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        } else {
+            self.background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    @ViewBuilder
+    func liquidGlassButton(prominent: Bool = false) -> some View {
+        if #available(macOS 26.0, *) {
+            if prominent {
+                self.buttonStyle(.glassProminent)
+            } else {
+                self.buttonStyle(.glass)
+            }
+        } else {
+            self.buttonStyle(.borderedProminent)
+        }
     }
 }

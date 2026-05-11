@@ -479,15 +479,7 @@ struct GestureSettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Picker("", selection: Binding(
-                get: { model.displayName(for: model.selectedApplication) },
-                set: { model.selectedApplication = model.normalizedApplicationName($0) }
-            )) {
-                ForEach(model.applicationOptions, id: \.self) { app in
-                    Text(app).tag(app)
-                }
-            }
-            .frame(width: 240)
+            applicationSegmentedPicker
 
             commandHeader
 
@@ -527,6 +519,37 @@ struct GestureSettingsView: View {
         } message: {
             Text(String(format: L("Your current %@ gesture settings will be deleted."), deviceTitle(model.selectedDevice)))
         }
+    }
+
+    private var applicationSegmentedPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 0) {
+                ForEach(model.applicationOptions, id: \.self) { app in
+                    Button {
+                        model.selectedApplication = model.normalizedApplicationName(app)
+                    } label: {
+                        Text(app)
+                            .font(.body.weight(.medium))
+                            .lineLimit(1)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background {
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .fill(isSelectedApplication(app) ? Color.accentColor : Color.clear)
+                            }
+                            .foregroundStyle(isSelectedApplication(app) ? Color.white : Color.primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(2)
+            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func isSelectedApplication(_ app: String) -> Bool {
+        model.normalizedApplicationName(app) == model.selectedApplication
     }
 
     private var commandHeader: some View {

@@ -629,10 +629,8 @@ struct GestureSettingsView: View {
                 commandHeader
                     .listRowSeparator(.hidden)
                 ForEach(model.commandRows) { row in
-                    CommandRowView(model: model, row: row)
-                    .contentShape(Rectangle())
-                    .onTapGesture { model.selectedGesture = row.id }
-                    .listRowBackground(row.id == model.selectedGesture ? Color.accentColor.opacity(0.16) : Color.clear)
+                    CommandRowView(model: model, row: row, isSelected: row.id == model.selectedGesture)
+                        .listRowBackground(Color.clear)
                 }
             } header: {
                 Text(deviceTitle(model.selectedDevice))
@@ -646,7 +644,8 @@ struct GestureSettingsView: View {
     private var commandHeader: some View {
         HStack {
             Text(L("Gesture")).frame(maxWidth: .infinity, alignment: .leading)
-            Text(L("Command")).frame(width: 260, alignment: .trailing)
+            Text(L("Command")).frame(width: 220, alignment: .trailing)
+            Text(L("Keyboard Shortcut")).frame(width: 180, alignment: .trailing)
             Text(L("On")).frame(width: 44, alignment: .trailing)
         }
         .font(.caption.weight(.semibold))
@@ -657,6 +656,7 @@ struct GestureSettingsView: View {
 struct CommandRowView: View {
     @ObservedObject var model: PreferencesViewModel
     var row: PreferencesViewModel.CommandRow
+    var isSelected: Bool
     @State private var isShowingGesturePreview = false
 
     var body: some View {
@@ -678,13 +678,18 @@ struct CommandRowView: View {
                         Text(command).tag(command)
                     }
                 }
-                .frame(width: 260, alignment: .trailing)
+                .frame(width: 220, alignment: .trailing)
             } else {
-                Text(row.command.command)
+                Text("-")
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .frame(width: 260, alignment: .trailing)
+                    .frame(width: 220, alignment: .trailing)
             }
+
+            Text(row.command.isAction ? "-" : row.command.command)
+                .foregroundStyle(row.command.isAction ? .secondary : .primary)
+                .lineLimit(1)
+                .frame(width: 180, alignment: .trailing)
 
             Toggle("", isOn: Binding(
                 get: { row.command.isEnabled },
@@ -697,7 +702,16 @@ struct CommandRowView: View {
             .labelsHidden()
             .frame(width: 44, alignment: .trailing)
         }
+        .contentShape(Rectangle())
+        .padding(.horizontal, 8)
         .padding(.vertical, 4)
+        .background {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+        }
+        .onTapGesture {
+            model.selectedGesture = row.id
+        }
     }
 
     private var gestureTitle: some View {

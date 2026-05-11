@@ -132,6 +132,7 @@ struct JitouchSettings {
     var logLevel = 0
     var appLanguage: AppLanguage = .system
     var themeMode: AppThemeMode = .system
+    var iCloudSyncEnabled = false
 
     var trackpadEnabled = true
     var trackpadLeftHanded = false

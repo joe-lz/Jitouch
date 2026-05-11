@@ -47,6 +47,15 @@
 "Quit %@" = "Quit %@";
 "Quit Jitouch" = "Quit Jitouch";
 "System" = "System";
+"Sync with iCloud" = "Sync with iCloud";
+"Sync Now" = "Sync Now";
+"iCloud sync is off." = "iCloud sync is off.";
+"Waiting for iCloud." = "Waiting for iCloud.";
+"Syncing with iCloud..." = "Syncing with iCloud...";
+"Synced with iCloud." = "Synced with iCloud.";
+"Last synced: %@" = "Last synced: %@";
+"iCloud sync failed." = "iCloud sync failed.";
+"iCloud is unavailable." = "iCloud is unavailable.";
 "Theme Mode" = "Theme Mode";
 "Turn Jitouch Off" = "Turn Jitouch Off";
 "Turn Jitouch On" = "Turn Jitouch On";

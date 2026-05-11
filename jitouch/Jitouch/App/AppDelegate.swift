@@ -13,6 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        settingsStore.onExternalSettingsChanged = { [weak self] in
+            self?.settingsStoreDidReceiveExternalSettings()
+        }
         settingsStore.load()
         applyInterfaceSettings()
         installMainMenu()
@@ -62,6 +65,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func systemDidWake() {
         gestureController.reload()
+    }
+
+    private func settingsStoreDidReceiveExternalSettings() {
+        applyInterfaceSettings()
+        statusBarController.reload()
+        gestureController.reload()
+        preferencesWindowController.reload()
     }
 
     private func requestAccessibilityTrustIfNeeded() {

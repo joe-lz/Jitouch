@@ -47,6 +47,15 @@
 "Quit %@" = "退出 %@";
 "Quit Jitouch" = "退出 Jitouch";
 "System" = "跟随系统";
+"Sync with iCloud" = "iCloud 同步";
+"Sync Now" = "立即同步";
+"iCloud sync is off." = "iCloud 同步已关闭。";
+"Waiting for iCloud." = "等待 iCloud 可用。";
+"Syncing with iCloud..." = "正在与 iCloud 同步...";
+"Synced with iCloud." = "已同步到 iCloud。";
+"Last synced: %@" = "上次同步：%@";
+"iCloud sync failed." = "iCloud 同步失败。";
+"iCloud is unavailable." = "iCloud 不可用。";
 "Theme Mode" = "主题模式";
 "Turn Jitouch Off" = "关闭 Jitouch";
 "Turn Jitouch On" = "开启 Jitouch";

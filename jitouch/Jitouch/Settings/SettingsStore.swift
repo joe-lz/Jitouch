@@ -1,5 +1,21 @@
 import Foundation
 
+struct ICloudSyncState: Equatable {
+    enum Status: Equatable {
+        case disabled
+        case waiting
+        case syncing
+        case synced
+        case failed
+    }
+
+    var status: Status = .disabled
+    var lastSyncDate: Date?
+    var message: String?
+
+    static let disabled = ICloudSyncState(status: .disabled)
+}
+
 final class SettingsStore {
     private enum Key {
         static let enabled = "enAll"
@@ -8,6 +24,7 @@ final class SettingsStore {
         static let showIcon = "ShowIcon"
         static let logLevel = "LogLevel"
         static let appLanguage = "AppLanguage"
+        static let iCloudSyncEnabled = "ICloudSyncEnabled"
         static let nightMode = "NightMode"
         static let themeMode = "ThemeMode"
         static let trackpadEnabled = "enTPAll"
@@ -17,11 +34,52 @@ final class SettingsStore {
         static let trackpadCommands = "TrackpadCommands"
         static let magicMouseCommands = "MagicMouseCommands"
         static let recognitionCommands = "RecognitionCommands"
+        static let iCloudSettings = "JitouchSettings"
+        static let iCloudLastSyncDate = "ICloudLastSyncDate"
+    }
+
+    private static let iCloudSyncedKeys: Set<String> = [
+        Key.enabled,
+        Key.clickSpeed,
+        Key.sensitivity,
+        Key.showIcon,
+        Key.logLevel,
+        Key.appLanguage,
+        Key.nightMode,
+        Key.themeMode,
+        Key.trackpadEnabled,
+        Key.handed,
+        Key.magicMouseEnabled,
+        Key.magicMouseHanded,
+        Key.trackpadCommands,
+        Key.magicMouseCommands,
+        Key.recognitionCommands
+    ]
+
+    var onExternalSettingsChanged: (() -> Void)?
+    var onICloudSyncStateChanged: (() -> Void)?
+
+    private let iCloudStore = NSUbiquitousKeyValueStore.default
+    private var iCloudObserver: NSObjectProtocol?
+    private var isApplyingICloudSettings = false
+
+    deinit {
+        if let iCloudObserver {
+            NotificationCenter.default.removeObserver(iCloudObserver)
+        }
     }
 
     private let appID = "com.zhuanz.JitouchModern" as CFString
     private(set) var rawSettings: [String: Any] = [:]
     var settings = JitouchSettings()
+    private(set) var iCloudSyncState = ICloudSyncState.disabled {
+        didSet {
+            guard oldValue != iCloudSyncState else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.onICloudSyncStateChanged?()
+            }
+        }
+    }
 
     func load() {
         let preferencesDirectory = FileManager.default.homeDirectoryForCurrentUser
@@ -34,12 +92,14 @@ final class SettingsStore {
             rawSettings = DefaultsFactory.makeDefaultSettings()
             persistRawSettings()
             apply(rawSettings)
+            configureICloudSyncAfterLoad()
             return
         }
 
         rawSettings = dictionary
         apply(dictionary)
         persistRawSettings()
+        configureICloudSyncAfterLoad()
     }
 
     func load(from userInfo: [AnyHashable: Any]?) {
@@ -49,6 +109,7 @@ final class SettingsStore {
         }
         rawSettings = dictionary
         apply(dictionary)
+        configureICloudSyncAfterLoad()
     }
 
     func saveRuntimeToggle() {
@@ -57,6 +118,7 @@ final class SettingsStore {
     }
 
     func updateGeneralSettings(_ update: (inout JitouchSettings) -> Void) {
+        let wasICloudSyncEnabled = settings.iCloudSyncEnabled
         update(&settings)
         setBool(settings.isEnabled, forKey: Key.enabled)
         setBool(settings.showsMenuBarIcon, forKey: Key.showIcon)
@@ -68,7 +130,26 @@ final class SettingsStore {
         setBool(settings.magicMouseLeftHanded, forKey: Key.magicMouseHanded)
         setString(settings.appLanguage.rawValue, forKey: Key.appLanguage)
         setString(settings.themeMode.rawValue, forKey: Key.themeMode)
-        synchronize()
+        setBool(settings.iCloudSyncEnabled, forKey: Key.iCloudSyncEnabled)
+
+        if wasICloudSyncEnabled != settings.iCloudSyncEnabled {
+            synchronize(pushToICloud: false)
+            if settings.iCloudSyncEnabled {
+                startICloudSync(mergeFromICloud: true)
+            } else {
+                stopICloudSync()
+            }
+        } else {
+            synchronize()
+        }
+    }
+
+    func synchronizeICloudNow() {
+        guard settings.iCloudSyncEnabled else {
+            iCloudSyncState = .disabled
+            return
+        }
+        startICloudSync(mergeFromICloud: true)
     }
 
     func postRuntimeSettingsChanged() {
@@ -235,6 +316,7 @@ final class SettingsStore {
         settings.logLevel = Int(Self.double(dictionary[Key.logLevel], default: 0))
         settings.appLanguage = AppLanguage(rawValue: dictionary[Key.appLanguage] as? String ?? "") ?? .system
         settings.themeMode = Self.themeMode(from: dictionary)
+        settings.iCloudSyncEnabled = Self.bool(dictionary[Key.iCloudSyncEnabled], default: false)
         settings.trackpadEnabled = Self.bool(dictionary[Key.trackpadEnabled], default: true)
         settings.trackpadLeftHanded = Self.bool(dictionary[Key.handed], default: false)
         settings.magicMouseEnabled = Self.bool(dictionary[Key.magicMouseEnabled], default: true)
@@ -242,13 +324,17 @@ final class SettingsStore {
         settings.trackpadCommands = Self.commandMap(from: dictionary[Key.trackpadCommands])
         settings.magicMouseCommands = Self.commandMap(from: dictionary[Key.magicMouseCommands])
         settings.recognitionCommands = Self.commandMap(from: dictionary[Key.recognitionCommands])
+        updateICloudSyncStateFromSettings()
     }
 
-    private func persistRawSettings() {
+    private func persistRawSettings(pushToICloud: Bool = false) {
         for (key, value) in rawSettings {
             CFPreferencesSetAppValue(key as CFString, value as CFPropertyList, appID)
         }
         CFPreferencesAppSynchronize(appID)
+        if pushToICloud {
+            pushSettingsToICloudIfNeeded()
+        }
     }
 
     private func setBool(_ value: Bool, forKey key: String) {
@@ -266,8 +352,11 @@ final class SettingsStore {
         CFPreferencesSetAppValue(key as CFString, value as CFString, appID)
     }
 
-    private func synchronize() {
+    private func synchronize(pushToICloud: Bool = true) {
         CFPreferencesAppSynchronize(appID)
+        if pushToICloud {
+            pushSettingsToICloudIfNeeded()
+        }
     }
 
     private func saveCommandMap(_ map: [String: AppGestureCommands], key: String) {
@@ -276,6 +365,154 @@ final class SettingsStore {
             .map { $0.dictionary() }
         CFPreferencesSetAppValue(key as CFString, rawSettings[key] as CFPropertyList, appID)
         synchronize()
+    }
+
+    private func configureICloudSyncAfterLoad() {
+        if settings.iCloudSyncEnabled {
+            startICloudSync(mergeFromICloud: true)
+        } else {
+            stopICloudSync()
+        }
+    }
+
+    private func startICloudSync(mergeFromICloud: Bool) {
+        observeICloudChanges()
+        guard FileManager.default.ubiquityIdentityToken != nil else {
+            iCloudSyncState = ICloudSyncState(
+                status: .waiting,
+                lastSyncDate: iCloudSyncState.lastSyncDate,
+                message: "iCloud is unavailable."
+            )
+            return
+        }
+
+        iCloudSyncState = ICloudSyncState(
+            status: .syncing,
+            lastSyncDate: iCloudSyncState.lastSyncDate,
+            message: nil
+        )
+        let didSynchronize = iCloudStore.synchronize()
+        if mergeFromICloud, let iCloudSettings = iCloudStore.dictionary(forKey: Key.iCloudSettings) {
+            applyICloudSettings(iCloudSettings)
+        } else if didSynchronize {
+            pushSettingsToICloudIfNeeded()
+        } else {
+            iCloudSyncState = ICloudSyncState(
+                status: .failed,
+                lastSyncDate: iCloudSyncState.lastSyncDate,
+                message: "iCloud sync failed."
+            )
+        }
+    }
+
+    private func stopICloudSync() {
+        if let iCloudObserver {
+            NotificationCenter.default.removeObserver(iCloudObserver)
+            self.iCloudObserver = nil
+        }
+        iCloudSyncState = .disabled
+    }
+
+    private func observeICloudChanges() {
+        guard iCloudObserver == nil else { return }
+        iCloudObserver = NotificationCenter.default.addObserver(
+            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: iCloudStore,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleICloudChange(notification)
+        }
+    }
+
+    private func handleICloudChange(_ notification: Notification) {
+        guard settings.iCloudSyncEnabled else { return }
+        let changedKeys = notification.userInfo?[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String]
+        if changedKeys == nil || changedKeys?.contains(Key.iCloudSettings) == true,
+           let iCloudSettings = iCloudStore.dictionary(forKey: Key.iCloudSettings) {
+            iCloudSyncState = ICloudSyncState(
+                status: .syncing,
+                lastSyncDate: iCloudSyncState.lastSyncDate,
+                message: nil
+            )
+            applyICloudSettings(iCloudSettings)
+        }
+    }
+
+    private func applyICloudSettings(_ iCloudSettings: [String: Any]) {
+        guard isApplyingICloudSettings == false else { return }
+        isApplyingICloudSettings = true
+        defer { isApplyingICloudSettings = false }
+
+        var mergedSettings = rawSettings
+        for key in Self.iCloudSyncedKeys {
+            if let value = iCloudSettings[key] {
+                mergedSettings[key] = value
+            }
+        }
+        rawSettings = mergedSettings
+        apply(mergedSettings)
+        persistRawSettings(pushToICloud: false)
+        markICloudSynced()
+        onExternalSettingsChanged?()
+    }
+
+    private func pushSettingsToICloudIfNeeded() {
+        guard settings.iCloudSyncEnabled, isApplyingICloudSettings == false else { return }
+        guard FileManager.default.ubiquityIdentityToken != nil else {
+            iCloudSyncState = ICloudSyncState(
+                status: .waiting,
+                lastSyncDate: iCloudSyncState.lastSyncDate,
+                message: "iCloud is unavailable."
+            )
+            return
+        }
+
+        iCloudSyncState = ICloudSyncState(
+            status: .syncing,
+            lastSyncDate: iCloudSyncState.lastSyncDate,
+            message: nil
+        )
+        var iCloudSettings: [String: Any] = [:]
+        for key in Self.iCloudSyncedKeys {
+            if let value = rawSettings[key] {
+                iCloudSettings[key] = value
+            }
+        }
+        iCloudStore.set(iCloudSettings, forKey: Key.iCloudSettings)
+        if iCloudStore.synchronize() {
+            markICloudSynced()
+        } else {
+            iCloudSyncState = ICloudSyncState(
+                status: .failed,
+                lastSyncDate: iCloudSyncState.lastSyncDate,
+                message: "iCloud sync failed."
+            )
+        }
+    }
+
+    private func updateICloudSyncStateFromSettings() {
+        let timestamp = Self.double(rawSettings[Key.iCloudLastSyncDate], default: 0)
+        let lastSyncDate = timestamp > 0 ? Date(timeIntervalSince1970: timestamp) : nil
+        guard settings.iCloudSyncEnabled else {
+            iCloudSyncState = .disabled
+            return
+        }
+        iCloudSyncState = ICloudSyncState(
+            status: lastSyncDate == nil ? .waiting : .synced,
+            lastSyncDate: lastSyncDate,
+            message: nil
+        )
+    }
+
+    private func markICloudSynced() {
+        let date = Date()
+        setDouble(date.timeIntervalSince1970, forKey: Key.iCloudLastSyncDate)
+        CFPreferencesAppSynchronize(appID)
+        iCloudSyncState = ICloudSyncState(
+            status: .synced,
+            lastSyncDate: date,
+            message: nil
+        )
     }
 
     private static func commandMap(from value: Any?) -> [String: AppGestureCommands] {

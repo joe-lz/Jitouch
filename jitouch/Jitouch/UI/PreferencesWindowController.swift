@@ -76,6 +76,10 @@ final class PreferencesWindowController: NSWindowController {
         window?.center()
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    func reload() {
+        model.reload()
+    }
 }
 
 @MainActor
@@ -130,6 +134,7 @@ final class PreferencesViewModel: ObservableObject {
     @Published var isShowingAddSheet = false
     @Published var isShowingRestoreAlert = false
     @Published var generalSettings = JitouchSettings()
+    @Published var iCloudSyncState = ICloudSyncState.disabled
 
     @Published var addApplication = "All Applications"
     @Published var addGesture = ""
@@ -188,6 +193,12 @@ final class PreferencesViewModel: ObservableObject {
     init(settingsStore: SettingsStore, onChange: @escaping () -> Void) {
         self.settingsStore = settingsStore
         self.onChange = onChange
+        settingsStore.onICloudSyncStateChanged = { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.iCloudSyncState = self.settingsStore.iCloudSyncState
+            }
+        }
         refreshInstalledApplications()
         reload()
     }
@@ -275,6 +286,7 @@ final class PreferencesViewModel: ObservableObject {
         refreshInstalledApplications()
         applyInterfaceSettings()
         generalSettings = settingsStore.settings
+        iCloudSyncState = settingsStore.iCloudSyncState
         if applicationProfiles.contains(where: { $0.application == selectedApplication }) == false {
             selectedApplication = "All Applications"
         }
@@ -360,7 +372,13 @@ final class PreferencesViewModel: ObservableObject {
         settingsStore.updateGeneralSettings(update)
         applyInterfaceSettings()
         generalSettings = settingsStore.settings
+        iCloudSyncState = settingsStore.iCloudSyncState
         finishSettingsChange()
+    }
+
+    func syncICloudNow() {
+        settingsStore.synchronizeICloudNow()
+        iCloudSyncState = settingsStore.iCloudSyncState
     }
 
     private func applyInterfaceSettings() {
@@ -1350,6 +1368,7 @@ struct GeneralSettingsView: View {
             Section {
                 switchRow(L("Enable Jitouch"), isOn: binding(\.isEnabled))
                 switchRow(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
+                iCloudSyncRow()
                 languageRow(Binding(
                     get: { model.generalSettings.appLanguage },
                     set: { value in model.updateGeneral { $0.appLanguage = value } }
@@ -1419,6 +1438,29 @@ struct GeneralSettingsView: View {
                     .toggleStyle(.switch)
             }
             .frame(width: controlWidth)
+        }
+    }
+
+    private func iCloudSyncRow() -> some View {
+        generalRow(L("Sync with iCloud")) {
+            HStack(spacing: 10) {
+                Text(iCloudSyncStatusText)
+                    .font(.caption)
+                    .foregroundStyle(iCloudSyncStatusColor)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Button(L("Sync Now")) {
+                    model.syncICloudNow()
+                }
+                .disabled(model.generalSettings.iCloudSyncEnabled == false || model.iCloudSyncState.status == .syncing)
+
+                Toggle("", isOn: binding(\.iCloudSyncEnabled))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            .frame(width: controlWidth, alignment: .trailing)
         }
     }
 
@@ -1513,6 +1555,38 @@ struct GeneralSettingsView: View {
             return L("Light")
         case .dark:
             return L("Dark")
+        }
+    }
+
+    private var iCloudSyncStatusText: String {
+        switch model.iCloudSyncState.status {
+        case .disabled:
+            return L("iCloud sync is off.")
+        case .waiting:
+            return L("Waiting for iCloud.")
+        case .syncing:
+            return L("Syncing with iCloud...")
+        case .synced:
+            if let lastSyncDate = model.iCloudSyncState.lastSyncDate {
+                let time = DateFormatter.localizedString(from: lastSyncDate, dateStyle: .none, timeStyle: .medium)
+                return String(format: L("Last synced: %@"), time)
+            }
+            return L("Synced with iCloud.")
+        case .failed:
+            return model.iCloudSyncState.message.map(L) ?? L("iCloud sync failed.")
+        }
+    }
+
+    private var iCloudSyncStatusColor: Color {
+        switch model.iCloudSyncState.status {
+        case .failed:
+            return .red
+        case .waiting:
+            return .orange
+        case .synced:
+            return .secondary
+        case .disabled, .syncing:
+            return .secondary
         }
     }
 

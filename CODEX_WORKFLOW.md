@@ -33,7 +33,6 @@ xcodebuild \
   -project /Users/Zhuanz/Documents/GitHub/Jitouch/jitouch/Jitouch/Jitouch.xcodeproj \
   -scheme Jitouch \
   -configuration Debug \
-  CODE_SIGNING_ALLOWED=NO \
   CONFIGURATION_BUILD_DIR=/Users/Zhuanz/Documents/GitHub/Jitouch/build/Debug \
   build
 
@@ -149,4 +148,3 @@ If UI changes are involved and Computer Use is available, inspect the visible ap
 If gesture changes are involved, check Jitouch logs and verify whether the gesture is recognized and dispatched.
 Do not stop after editing files; compile and relaunch the app.
 ```
-

@@ -3,7 +3,6 @@ import Foundation
 enum GestureDevice: String {
     case trackpad = "trackpad"
     case magicMouse = "magicmouse"
-    case characterRecognition = "charrec"
 }
 
 enum RecognizedGesture: String {
@@ -127,8 +126,6 @@ enum RecognizedGesture: String {
             return trackpadSupported.map(\.rawValue)
         case .magicMouse:
             return magicMouseSupported.map(\.rawValue)
-        case .characterRecognition:
-            return []
         }
     }
 }

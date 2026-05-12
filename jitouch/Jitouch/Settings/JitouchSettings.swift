@@ -178,5 +178,4 @@ struct JitouchSettings {
 
     var trackpadCommands: [String: AppGestureCommands] = [:]
     var magicMouseCommands: [String: AppGestureCommands] = [:]
-    var recognitionCommands: [String: AppGestureCommands] = [:]
 }

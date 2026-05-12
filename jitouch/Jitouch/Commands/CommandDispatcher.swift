@@ -11,7 +11,7 @@ final class CommandDispatcher {
 
     func dispatch(_ gesture: String, device: GestureDevice) {
         DispatchQueue.global(qos: .userInteractive).async {
-            let application = device == .characterRecognition ? NSWorkspace.shared.frontmostApplication?.localizedName : self.windowService.applicationUnderPointer()
+            let application = self.windowService.applicationUnderPointer()
             guard let command = self.settingsStore.command(for: gesture, device: device, application: application) else {
                 NSLog("Jitouch: no enabled command for \(device.rawValue) gesture \(gesture), application \(application ?? "unknown")")
                 return
@@ -22,8 +22,13 @@ final class CommandDispatcher {
     }
 
     func hasEnabledCommand(for gesture: String, device: GestureDevice) -> Bool {
-        let application = device == .characterRecognition ? NSWorkspace.shared.frontmostApplication?.localizedName : windowService.applicationUnderPointer()
+        let application = windowService.applicationUnderPointer()
         return settingsStore.command(for: gesture, device: device, application: application) != nil
+    }
+
+    func commandName(for gesture: String, device: GestureDevice) -> String? {
+        let application = windowService.applicationUnderPointer()
+        return settingsStore.command(for: gesture, device: device, application: application)?.command
     }
 
     private func execute(_ command: GestureCommand, device: GestureDevice, application: String?) {
@@ -124,9 +129,7 @@ final class CommandDispatcher {
     }
 
     private func activateWindowIfNeeded(_ device: GestureDevice) {
-        if device != .characterRecognition {
-            _ = windowService.activateWindowUnderPointer()
-        }
+        _ = windowService.activateWindowUnderPointer()
     }
 
     private func openDefaultBrowser() {

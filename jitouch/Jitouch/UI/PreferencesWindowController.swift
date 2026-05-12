@@ -181,6 +181,7 @@ final class PreferencesViewModel: ObservableObject {
         "Middle Click",
         "Left Click",
         "Right Click",
+        "Auto Scroll",
         "Launch Finder",
         "Launch Browser",
         "Show Desktop",
@@ -301,7 +302,12 @@ final class PreferencesViewModel: ObservableObject {
     }
 
     func selectDevice(_ device: GestureDevice) {
-        selectedTab = device == .trackpad ? .trackpad : .magicMouse
+        switch device {
+        case .trackpad:
+            selectedTab = .trackpad
+        case .magicMouse:
+            selectedTab = .magicMouse
+        }
         resetGestureSelection()
     }
 
@@ -1797,7 +1803,6 @@ private func deviceTitle(_ device: GestureDevice) -> String {
     switch device {
     case .trackpad: return L("Trackpad")
     case .magicMouse: return L("Magic Mouse")
-    case .characterRecognition: return L("Character Recognition")
     }
 }
 

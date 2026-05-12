@@ -239,20 +239,21 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
     }
 
     private func sideScroll(touches: [TouchPoint]) -> RecognizedGesture? {
-        guard startTouches.count == 1, touches.count == 1 else {
+        guard startTouches.count == 2, touches.count == 2 else {
             return nil
         }
 
-        let start = startTouches[0]
-        let current = touches[0]
-        guard abs(current.y - start.y) > 0.16 else {
+        let startX = startTouches.map(\.x)
+        let currentY = touches.map(\.y).reduce(0, +) / 2
+        let startY = startTouches.map(\.y).reduce(0, +) / 2
+        guard abs(currentY - startY) > 0.08 else {
             return nil
         }
 
-        if start.x < 0.18 {
+        if (startX.min() ?? 1) < 0.08 {
             return .leftSideScroll
         }
-        if start.x > 0.82 {
+        if (startX.max() ?? 0) > 0.92 {
             return .rightSideScroll
         }
         return nil

@@ -29,6 +29,18 @@ final class AccessibilityWindowService {
         return window
     }
 
+    func movableWindowUnderPointer() -> AXUIElement? {
+        activateWindowUnderPointer()
+    }
+
+    func frame(ofWindow window: AXUIElement) -> CGRect? {
+        frame(of: window)
+    }
+
+    func setFrame(_ frame: CGRect, ofWindow window: AXUIElement) {
+        setFrame(frame, for: window)
+    }
+
     func focusedWindow() -> AXUIElement? {
         var appValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedApplicationAttribute as CFString, &appValue) == .success else {

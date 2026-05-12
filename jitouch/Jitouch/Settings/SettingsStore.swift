@@ -33,7 +33,6 @@ final class SettingsStore {
         static let magicMouseHanded = "MMHanded"
         static let trackpadCommands = "TrackpadCommands"
         static let magicMouseCommands = "MagicMouseCommands"
-        static let recognitionCommands = "RecognitionCommands"
         static let iCloudSettings = "JitouchSettings"
         static let iCloudLastSyncDate = "ICloudLastSyncDate"
     }
@@ -53,7 +52,6 @@ final class SettingsStore {
         Key.magicMouseHanded,
         Key.trackpadCommands,
         Key.magicMouseCommands,
-        Key.recognitionCommands,
         Key.iCloudLastSyncDate
     ]
 
@@ -169,8 +167,6 @@ final class SettingsStore {
             maps = settings.trackpadCommands
         case .magicMouse:
             maps = settings.magicMouseCommands
-        case .characterRecognition:
-            maps = settings.recognitionCommands
         }
 
         let applicationMap = application.flatMap { maps[$0] }
@@ -197,8 +193,6 @@ final class SettingsStore {
             map = settings.trackpadCommands
         case .magicMouse:
             map = settings.magicMouseCommands
-        case .characterRecognition:
-            map = settings.recognitionCommands
         }
 
         return map.values.sorted {
@@ -239,8 +233,6 @@ final class SettingsStore {
             return DefaultsFactory.trackpadGestures
         case .magicMouse:
             return DefaultsFactory.magicMouseGestures
-        case .characterRecognition:
-            return []
         }
     }
 
@@ -268,13 +260,6 @@ final class SettingsStore {
             app.gestures[command.gesture] = command
             settings.magicMouseCommands[application] = app
             saveCommandMap(settings.magicMouseCommands, key: Key.magicMouseCommands)
-
-        case .characterRecognition:
-            var app = settings.recognitionCommands[application] ?? AppGestureCommands(dictionary: ["Application": application, "Path": path, "Gestures": []])
-            app.path = path.isEmpty ? app.path : path
-            app.gestures[command.gesture] = command
-            settings.recognitionCommands[application] = app
-            saveCommandMap(settings.recognitionCommands, key: Key.recognitionCommands)
         }
     }
 
@@ -286,9 +271,6 @@ final class SettingsStore {
         case .magicMouse:
             settings.magicMouseCommands[application]?.gestures.removeValue(forKey: gesture)
             saveCommandMap(settings.magicMouseCommands, key: Key.magicMouseCommands)
-        case .characterRecognition:
-            settings.recognitionCommands[application]?.gestures.removeValue(forKey: gesture)
-            saveCommandMap(settings.recognitionCommands, key: Key.recognitionCommands)
         }
     }
 
@@ -303,10 +285,6 @@ final class SettingsStore {
             rawSettings[Key.magicMouseCommands] = defaults[Key.magicMouseCommands]
             settings.magicMouseCommands = Self.commandMap(from: defaults[Key.magicMouseCommands])
             CFPreferencesSetAppValue(Key.magicMouseCommands as CFString, rawSettings[Key.magicMouseCommands] as CFPropertyList, appID)
-        case .characterRecognition:
-            rawSettings[Key.recognitionCommands] = defaults[Key.recognitionCommands]
-            settings.recognitionCommands = Self.commandMap(from: defaults[Key.recognitionCommands])
-            CFPreferencesSetAppValue(Key.recognitionCommands as CFString, rawSettings[Key.recognitionCommands] as CFPropertyList, appID)
         }
         synchronize()
     }
@@ -326,7 +304,6 @@ final class SettingsStore {
         settings.magicMouseLeftHanded = Self.bool(dictionary[Key.magicMouseHanded], default: false)
         settings.trackpadCommands = Self.commandMap(from: dictionary[Key.trackpadCommands])
         settings.magicMouseCommands = Self.commandMap(from: dictionary[Key.magicMouseCommands])
-        settings.recognitionCommands = Self.commandMap(from: dictionary[Key.recognitionCommands])
         updateICloudSyncStateFromSettings()
     }
 
@@ -607,12 +584,6 @@ private enum DefaultsFactory {
             "Handed": 0,
             "enMMAll": 1,
             "MMHanded": 0,
-            "enCharRegTP": 0,
-            "enCharRegMM": 0,
-            "charRegMouseButton": 0,
-            "charRegIndexRingDistance": 0.33,
-            "enOneDrawing": 0,
-            "enTwoDrawing": 1,
             "TrackpadCommands": [
                 app("All Applications", gestures: [
                     gesture("One-Fix Left-Tap", "Previous Tab"),
@@ -636,18 +607,6 @@ private enum DefaultsFactory {
                     gesture("Three-Swipe-Down", "Mission Control"),
                     gesture("V-Shape", "Move / Resize"),
                     gesture("Middle Click", "Middle Click")
-                ])
-            ],
-            "RecognitionCommands": [
-                app("All Applications", gestures: [
-                    gesture("B", "Launch Browser"),
-                    gesture("F", "Launch Finder"),
-                    gesture("N", "New"),
-                    gesture("O", "Open"),
-                    gesture("S", "Save"),
-                    gesture("T", "New Tab"),
-                    gesture("Up", "Copy"),
-                    gesture("Down", "Paste")
                 ])
             ]
         ]

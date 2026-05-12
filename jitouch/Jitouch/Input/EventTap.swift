@@ -2,11 +2,21 @@ import ApplicationServices
 import Foundation
 
 final class EventTap {
+    typealias MouseDownHandler = (CGEventType) -> Bool
+
+    private static weak var activeTap: EventTap?
+
     private var machPort: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    private let mouseDownHandler: MouseDownHandler?
+
+    init(mouseDownHandler: MouseDownHandler? = nil) {
+        self.mouseDownHandler = mouseDownHandler
+    }
 
     func start() {
         stop()
+        Self.activeTap = self
 
         let mask =
             CGEventMask(1 << CGEventType.scrollWheel.rawValue) |
@@ -50,6 +60,9 @@ final class EventTap {
         if let machPort {
             CGEvent.tapEnable(tap: machPort, enable: false)
         }
+        if Self.activeTap === self {
+            Self.activeTap = nil
+        }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }
@@ -60,6 +73,10 @@ final class EventTap {
     private static let callback: CGEventTapCallBack = { _, type, event, _ in
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             return Unmanaged.passUnretained(event)
+        }
+        if (type == .leftMouseDown || type == .rightMouseDown),
+           EventTap.activeTap?.mouseDownHandler?(type) == true {
+            return nil
         }
         return Unmanaged.passUnretained(event)
     }

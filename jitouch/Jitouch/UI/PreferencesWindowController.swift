@@ -777,7 +777,7 @@ struct CommandRowView: View {
                 }
             )) {
                 ForEach(model.commands, id: \.self) { command in
-                    Text(command).tag(command)
+                    Text(commandDisplayName(command)).tag(command)
                 }
             }
             .frame(width: GestureListLayout.commandWidth, alignment: .trailing)
@@ -1263,12 +1263,12 @@ struct AddGestureSheet: View {
 
             if model.addMode == .action {
                 settingsRow(L("Command"), labelWidth: labelWidth, controlWidth: controlWidth, spacing: columnSpacing) {
-                    menuControl(title: model.addCommand) {
+                    menuControl(title: commandDisplayName(model.addCommand)) {
                         ForEach(model.commands, id: \.self) { command in
                             Button {
                                 model.addCommand = command
                             } label: {
-                                menuItemLabel(title: command, isSelected: command == model.addCommand)
+                                menuItemLabel(title: commandDisplayName(command), isSelected: command == model.addCommand)
                             }
                         }
                     }
@@ -1804,6 +1804,10 @@ private func deviceTitle(_ device: GestureDevice) -> String {
     case .trackpad: return L("Trackpad")
     case .magicMouse: return L("Magic Mouse")
     }
+}
+
+private func commandDisplayName(_ command: String) -> String {
+    L(command)
 }
 
 private func settingsRow<Content: View>(

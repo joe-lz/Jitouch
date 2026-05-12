@@ -617,7 +617,13 @@ private enum DefaultsFactory {
                 app("All Applications", gestures: [
                     gesture("One-Fix Left-Tap", "Previous Tab"),
                     gesture("One-Fix Right-Tap", "Next Tab"),
-                    gesture("Three-Finger Tap", "Middle Click")
+                    gesture("One-Fix One-Slide", "Move / Resize"),
+                    gesture("One-Fix Two-Slide-Down", "Close / Close Tab"),
+                    gesture("One-Fix-Press Two-Slide-Down", "Quit"),
+                    gesture("Two-Fix Index-Double-Tap", "Refresh"),
+                    gesture("Three-Finger Tap", "Middle Click"),
+                    gesture("Pinky-To-Index", "Zoom"),
+                    gesture("Index-To-Pinky", "Minimize")
                 ])
             ],
             "MagicMouseCommands": [
@@ -628,6 +634,7 @@ private enum DefaultsFactory {
                     gesture("Middle-Fix Index-Slide-In", "Refresh"),
                     gesture("Three-Swipe-Up", "Show Desktop"),
                     gesture("Three-Swipe-Down", "Mission Control"),
+                    gesture("V-Shape", "Move / Resize"),
                     gesture("Middle Click", "Middle Click")
                 ])
             ],

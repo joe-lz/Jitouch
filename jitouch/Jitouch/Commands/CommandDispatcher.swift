@@ -21,6 +21,11 @@ final class CommandDispatcher {
         }
     }
 
+    func hasEnabledCommand(for gesture: String, device: GestureDevice) -> Bool {
+        let application = device == .characterRecognition ? NSWorkspace.shared.frontmostApplication?.localizedName : windowService.applicationUnderPointer()
+        return settingsStore.command(for: gesture, device: device, application: application) != nil
+    }
+
     private func execute(_ command: GestureCommand, device: GestureDevice, application: String?) {
         if !command.isAction {
             KeySimulator.press(keyCode: CGKeyCode(command.keyCode), modifiers: CGEventFlags(rawValue: command.modifierFlags))

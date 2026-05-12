@@ -99,10 +99,16 @@ final class GestureController {
         if settingsStore.settings.trackpadEnabled {
             switch currentContactCounts[.trackpad] {
             case 3:
+                guard commandDispatcher.hasEnabledCommand(for: RecognizedGesture.threeFingerClick.rawValue, device: .trackpad) else {
+                    return false
+                }
                 NSLog("Jitouch: recognized trackpad gesture \(RecognizedGesture.threeFingerClick.rawValue)")
                 commandDispatcher.dispatch(RecognizedGesture.threeFingerClick.rawValue, device: .trackpad)
                 return true
             case 4:
+                guard commandDispatcher.hasEnabledCommand(for: RecognizedGesture.fourFingerClick.rawValue, device: .trackpad) else {
+                    return false
+                }
                 NSLog("Jitouch: recognized trackpad gesture \(RecognizedGesture.fourFingerClick.rawValue)")
                 commandDispatcher.dispatch(RecognizedGesture.fourFingerClick.rawValue, device: .trackpad)
                 return true
@@ -112,6 +118,9 @@ final class GestureController {
         }
 
         if settingsStore.settings.magicMouseEnabled, currentContactCounts[.magicMouse] == 3 {
+            guard commandDispatcher.hasEnabledCommand(for: RecognizedGesture.threeFingerClick.rawValue, device: .magicMouse) else {
+                return false
+            }
             NSLog("Jitouch: recognized magicmouse gesture \(RecognizedGesture.threeFingerClick.rawValue)")
             commandDispatcher.dispatch(RecognizedGesture.threeFingerClick.rawValue, device: .magicMouse)
             return true

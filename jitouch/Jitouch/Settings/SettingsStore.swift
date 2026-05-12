@@ -53,7 +53,8 @@ final class SettingsStore {
         Key.magicMouseHanded,
         Key.trackpadCommands,
         Key.magicMouseCommands,
-        Key.recognitionCommands
+        Key.recognitionCommands,
+        Key.iCloudLastSyncDate
     ]
 
     var onExternalSettingsChanged: (() -> Void)?
@@ -215,7 +216,9 @@ final class SettingsStore {
         let appCommands = applicationProfiles(for: device).first { $0.application == application }
         let commands = appCommands.map { Array($0.gestures.values) } ?? []
         let catalog = gestureCatalog(for: device)
+        let catalogSet = Set(catalog)
         return commands
+            .filter { catalogSet.contains($0.gesture) }
             .sorted {
                 let lhs = catalog.firstIndex(of: $0.gesture) ?? Int.max
                 let rhs = catalog.firstIndex(of: $1.gesture) ?? Int.max
@@ -393,7 +396,7 @@ final class SettingsStore {
         )
         let didSynchronize = iCloudStore.synchronize()
         if mergeFromICloud, let iCloudSettings = iCloudStore.dictionary(forKey: Key.iCloudSettings) {
-            applyICloudSettings(iCloudSettings)
+            reconcileICloudSettings(iCloudSettings)
         } else if didSynchronize {
             pushSettingsToICloudIfNeeded()
         } else {
@@ -434,7 +437,24 @@ final class SettingsStore {
                 lastSyncDate: iCloudSyncState.lastSyncDate,
                 message: nil
             )
+            reconcileICloudSettings(iCloudSettings)
+        }
+    }
+
+    private func reconcileICloudSettings(_ iCloudSettings: [String: Any]) {
+        let localTimestamp = Self.double(rawSettings[Key.iCloudLastSyncDate], default: 0)
+        let iCloudTimestamp = Self.double(iCloudSettings[Key.iCloudLastSyncDate], default: 0)
+
+        if iCloudTimestamp > localTimestamp {
             applyICloudSettings(iCloudSettings)
+        } else if localTimestamp > iCloudTimestamp {
+            pushSettingsToICloudIfNeeded()
+        } else {
+            iCloudSyncState = ICloudSyncState(
+                status: .synced,
+                lastSyncDate: localTimestamp > 0 ? Date(timeIntervalSince1970: localTimestamp) : nil,
+                message: nil
+            )
         }
     }
 
@@ -452,7 +472,7 @@ final class SettingsStore {
         rawSettings = mergedSettings
         apply(mergedSettings)
         persistRawSettings(pushToICloud: false)
-        markICloudSynced()
+        markICloudSynced(at: Self.double(iCloudSettings[Key.iCloudLastSyncDate], default: Date().timeIntervalSince1970))
         onExternalSettingsChanged?()
     }
 
@@ -472,6 +492,9 @@ final class SettingsStore {
             lastSyncDate: iCloudSyncState.lastSyncDate,
             message: nil
         )
+        let syncDate = Date()
+        rawSettings[Key.iCloudLastSyncDate] = syncDate.timeIntervalSince1970
+
         var iCloudSettings: [String: Any] = [:]
         for key in Self.iCloudSyncedKeys {
             if let value = rawSettings[key] {
@@ -480,7 +503,7 @@ final class SettingsStore {
         }
         iCloudStore.set(iCloudSettings, forKey: Key.iCloudSettings)
         if iCloudStore.synchronize() {
-            markICloudSynced()
+            markICloudSynced(at: syncDate.timeIntervalSince1970)
         } else {
             iCloudSyncState = ICloudSyncState(
                 status: .failed,
@@ -504,9 +527,9 @@ final class SettingsStore {
         )
     }
 
-    private func markICloudSynced() {
-        let date = Date()
-        setDouble(date.timeIntervalSince1970, forKey: Key.iCloudLastSyncDate)
+    private func markICloudSynced(at timestamp: TimeInterval) {
+        let date = Date(timeIntervalSince1970: timestamp)
+        setDouble(timestamp, forKey: Key.iCloudLastSyncDate)
         CFPreferencesAppSynchronize(appID)
         iCloudSyncState = ICloudSyncState(
             status: .synced,
@@ -566,65 +589,9 @@ final class SettingsStore {
 }
 
 private enum DefaultsFactory {
-    static let trackpadGestures = [
-        "One-Fix Left-Tap",
-        "One-Fix Right-Tap",
-        "One-Fix One-Slide",
-        "One-Fix Two-Slide-Up",
-        "One-Fix Two-Slide-Down",
-        "One-Fix-Press Two-Slide-Up",
-        "One-Fix-Press Two-Slide-Down",
-        "Two-Fix Index-Double-Tap",
-        "Two-Fix Middle-Double-Tap",
-        "Two-Fix Ring-Double-Tap",
-        "Two-Fix One-Slide-Up",
-        "Two-Fix One-Slide-Down",
-        "Two-Fix One-Slide-Left",
-        "Two-Fix One-Slide-Right",
-        "Three-Finger Tap",
-        "Three-Finger Click",
-        "Three-Finger Pinch-In",
-        "Three-Finger Pinch-Out",
-        "Three-Swipe-Up",
-        "Three-Swipe-Down",
-        "Three-Swipe-Left",
-        "Three-Swipe-Right",
-        "Four-Finger Tap",
-        "Four-Finger Click",
-        "Four-Swipe-Up",
-        "Four-Swipe-Down",
-        "Four-Swipe-Left",
-        "Four-Swipe-Right",
-        "Pinky-To-Index",
-        "Index-To-Pinky",
-        "Left-Side Scroll",
-        "Right-Side Scroll",
-        "All Unassigned Gestures"
-    ]
+    static let trackpadGestures = RecognizedGesture.supportedGestures(for: .trackpad) + ["All Unassigned Gestures"]
 
-    static let magicMouseGestures = [
-        "Middle-Fix Index-Near-Tap",
-        "Middle-Fix Index-Far-Tap",
-        "Index-Fix Middle-Near-Tap",
-        "Index-Fix Middle-Far-Tap",
-        "Middle-Fix Index-Slide-Out",
-        "Middle-Fix Index-Slide-In",
-        "Index-Fix Middle-Slide-Out",
-        "Index-Fix Middle-Slide-In",
-        "Three-Swipe-Left",
-        "Three-Swipe-Right",
-        "Three-Swipe-Up",
-        "Three-Swipe-Down",
-        "Three-Finger Click",
-        "V-Shape",
-        "Middle Click",
-        "Two-Fix One-Slide-Up",
-        "Two-Fix One-Slide-Down",
-        "Two-Fix One-Slide-Left",
-        "Two-Fix One-Slide-Right",
-        "Thumb",
-        "All Unassigned Gestures"
-    ]
+    static let magicMouseGestures = RecognizedGesture.supportedGestures(for: .magicMouse) + ["All Unassigned Gestures"]
 
     static func makeDefaultSettings() -> [String: Any] {
         [
@@ -650,11 +617,7 @@ private enum DefaultsFactory {
                 app("All Applications", gestures: [
                     gesture("One-Fix Left-Tap", "Previous Tab"),
                     gesture("One-Fix Right-Tap", "Next Tab"),
-                    gesture("One-Fix One-Slide", "Move / Resize"),
-                    gesture("One-Fix Two-Slide-Down", "Close / Close Tab"),
-                    gesture("Three-Finger Tap", "Middle Click"),
-                    gesture("Pinky-To-Index", "Zoom"),
-                    gesture("Index-To-Pinky", "Minimize")
+                    gesture("Three-Finger Tap", "Middle Click")
                 ])
             ],
             "MagicMouseCommands": [
@@ -665,7 +628,6 @@ private enum DefaultsFactory {
                     gesture("Middle-Fix Index-Slide-In", "Refresh"),
                     gesture("Three-Swipe-Up", "Show Desktop"),
                     gesture("Three-Swipe-Down", "Mission Control"),
-                    gesture("V-Shape", "Move / Resize"),
                     gesture("Middle Click", "Middle Click")
                 ])
             ],

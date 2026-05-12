@@ -4,6 +4,9 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
     private var previousTouches: [TouchPoint] = []
     private var startTouches: [TouchPoint] = []
     private var startTimestamp: TimeInterval = 0
+    private var oneFixedTapTimestamp: TimeInterval = 0
+    private var oneFixedTapAnchor: TouchPoint?
+    private var oneFixedTapMovingTouch: TouchPoint?
     private var hasTriggered = false
 
     mutating func update(touches: [TouchPoint], timestamp: TimeInterval) -> RecognizedGesture? {
@@ -18,6 +21,12 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
             startTouches = touches
             startTimestamp = timestamp
             hasTriggered = false
+        }
+
+        updateOneFixedTapTracking(touches: touches, timestamp: timestamp)
+        if let tap = oneFixedTap(touches: touches, timestamp: timestamp) {
+            clearOneFixedTapTracking()
+            return tap
         }
 
         guard !hasTriggered else {
@@ -39,11 +48,6 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
             return swipe
         }
 
-        if let tap = oneFixedTap(touches: touches, timestamp: timestamp) {
-            hasTriggered = true
-            return tap
-        }
-
         return nil
     }
 
@@ -51,7 +55,19 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
         previousTouches.removeAll()
         startTouches.removeAll()
         startTimestamp = 0
+        clearOneFixedTapTracking()
         hasTriggered = false
+    }
+
+    private mutating func updateOneFixedTapTracking(touches: [TouchPoint], timestamp: TimeInterval) {
+        guard previousTouches.count == 1, touches.count == 2 else {
+            return
+        }
+
+        let anchor = previousTouches[0]
+        oneFixedTapTimestamp = timestamp
+        oneFixedTapAnchor = anchor
+        oneFixedTapMovingTouch = touches.first { $0.identifier != anchor.identifier } ?? touches.sortedByIdentifier().first
     }
 
     private func swipeGesture(requiredFingers: Int, touches: [TouchPoint]) -> RecognizedGesture? {
@@ -77,13 +93,28 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
     }
 
     private func oneFixedTap(touches: [TouchPoint], timestamp: TimeInterval) -> RecognizedGesture? {
-        guard startTouches.count == 1, previousTouches.count == 2, touches.count == 1, timestamp - startTimestamp < 0.4 else {
+        guard
+            previousTouches.count == 2,
+            touches.count == 1,
+            let anchor = oneFixedTapAnchor,
+            let movingTouch = oneFixedTapMovingTouch,
+            timestamp - oneFixedTapTimestamp < 0.4
+        else {
             return nil
         }
 
-        let startX = startTouches[0].x
-        let remainingX = touches[0].x
-        return remainingX > startX ? .oneFixRightTap : .oneFixLeftTap
+        let remainingTouch = touches[0]
+        guard remainingTouch.identifier == anchor.identifier else {
+            return nil
+        }
+
+        return movingTouch.x > anchor.x ? .oneFixRightTap : .oneFixLeftTap
+    }
+
+    private mutating func clearOneFixedTapTracking() {
+        oneFixedTapTimestamp = 0
+        oneFixedTapAnchor = nil
+        oneFixedTapMovingTouch = nil
     }
 }
 

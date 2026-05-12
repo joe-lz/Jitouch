@@ -7,6 +7,7 @@ final class GestureController {
     private var eventTap: EventTap?
     private var trackpadRecognizer = TrackpadGestureRecognizer()
     private var magicMouseRecognizer = MagicMouseGestureRecognizer()
+    private var lastLoggedContactCounts: [GestureDevice: Int] = [:]
 
     init(settingsStore: SettingsStore, commandDispatcher: CommandDispatcher) {
         self.settingsStore = settingsStore
@@ -47,6 +48,8 @@ final class GestureController {
             return
         }
 
+        logContactCountTransition(device: device, touches: touches)
+
         switch device {
         case .trackpad:
             guard settingsStore.settings.trackpadEnabled else {
@@ -55,6 +58,7 @@ final class GestureController {
             }
             let normalizedTouches = settingsStore.settings.trackpadLeftHanded ? touches.map(\.mirroredHorizontally) : touches
             if let gesture = trackpadRecognizer.update(touches: normalizedTouches.contactsOnly(), timestamp: timestamp) {
+                NSLog("Jitouch: recognized trackpad gesture \(gesture.rawValue)")
                 commandDispatcher.dispatch(gesture.rawValue, device: .trackpad)
             }
 
@@ -65,12 +69,22 @@ final class GestureController {
             }
             let normalizedTouches = settingsStore.settings.magicMouseLeftHanded ? touches.map(\.mirroredHorizontally) : touches
             if let gesture = magicMouseRecognizer.update(touches: normalizedTouches.contactsOnly(), timestamp: timestamp) {
+                NSLog("Jitouch: recognized magicmouse gesture \(gesture.rawValue)")
                 commandDispatcher.dispatch(gesture.rawValue, device: .magicMouse)
             }
 
         case .characterRecognition:
             break
         }
+    }
+
+    private func logContactCountTransition(device: GestureDevice, touches: [TouchPoint]) {
+        let contactCount = touches.contactsOnly().count
+        guard lastLoggedContactCounts[device] != contactCount else {
+            return
+        }
+        lastLoggedContactCounts[device] = contactCount
+        NSLog("Jitouch: \(device.rawValue) contact count \(contactCount) from \(touches.count) raw touch(es)")
     }
 }
 

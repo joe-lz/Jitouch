@@ -75,8 +75,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func requestAccessibilityTrustIfNeeded() {
+        let trustedBeforePrompt = AXIsProcessTrusted()
+        NSLog("Jitouch: accessibility trusted before prompt: \(trustedBeforePrompt)")
         let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
-        _ = AXIsProcessTrustedWithOptions(options)
+        let trustedAfterPrompt = AXIsProcessTrustedWithOptions(options)
+        NSLog("Jitouch: accessibility trusted after prompt: \(trustedAfterPrompt)")
     }
 
     private func applyInterfaceSettings() {

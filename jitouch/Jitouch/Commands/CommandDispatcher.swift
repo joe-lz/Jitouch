@@ -13,8 +13,10 @@ final class CommandDispatcher {
         DispatchQueue.global(qos: .userInteractive).async {
             let application = device == .characterRecognition ? NSWorkspace.shared.frontmostApplication?.localizedName : self.windowService.applicationUnderPointer()
             guard let command = self.settingsStore.command(for: gesture, device: device, application: application) else {
+                NSLog("Jitouch: no enabled command for \(device.rawValue) gesture \(gesture), application \(application ?? "unknown")")
                 return
             }
+            NSLog("Jitouch: dispatch \(device.rawValue) gesture \(gesture) -> \(command.command), application \(application ?? "unknown")")
             self.execute(command, device: device, application: application)
         }
     }

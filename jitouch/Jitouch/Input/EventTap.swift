@@ -39,6 +39,7 @@ final class EventTap {
             CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }
         CGEvent.tapEnable(tap: tap, enable: true)
+        NSLog("Jitouch: event tap started")
     }
 
     func restart() {

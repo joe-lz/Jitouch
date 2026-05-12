@@ -6,8 +6,10 @@ final class MultiTouchDeviceManager {
     private static weak var current: MultiTouchDeviceManager?
 
     private let handler: TouchHandler
+    private var deviceList: CFMutableArray?
     private var devices: [MTDeviceRef] = []
     private var deviceTypes: [UnsafeMutableRawPointer: GestureDevice] = [:]
+    private var devicesWithLoggedFrames: Set<UnsafeMutableRawPointer> = []
 
     init(handler: @escaping TouchHandler) {
         self.handler = handler
@@ -20,8 +22,10 @@ final class MultiTouchDeviceManager {
             NSLog("Jitouch: unable to create multitouch device list")
             return
         }
+        deviceList = list
 
         let count = CFArrayGetCount(list)
+        NSLog("Jitouch: discovered \(count) multitouch device(s)")
         for index in 0..<count {
             guard let rawDevice = CFArrayGetValueAtIndex(list, index) else {
                 continue
@@ -31,8 +35,11 @@ final class MultiTouchDeviceManager {
             let device = MTDeviceRef(mutableDevice)
             var familyID: Int32 = 0
             MTDeviceGetFamilyID(device, &familyID)
+            var deviceID: UInt64 = 0
+            _ = MTDeviceGetDeviceID(device, &deviceID)
 
             guard let deviceType = MultiTouchFamily.deviceType(for: familyID) else {
+                NSLog("Jitouch: skipping multitouch device \(index) id \(deviceID) family \(familyID)")
                 continue
             }
 
@@ -40,6 +47,7 @@ final class MultiTouchDeviceManager {
             MTDeviceStart(device, 0)
             devices.append(device)
             deviceTypes[mutableDevice] = deviceType
+            NSLog("Jitouch: started \(deviceType.rawValue) device \(index) id \(deviceID) family \(familyID) running \(MTDeviceIsRunning(device))")
         }
     }
 
@@ -55,6 +63,8 @@ final class MultiTouchDeviceManager {
         }
         devices.removeAll()
         deviceTypes.removeAll()
+        devicesWithLoggedFrames.removeAll()
+        deviceList = nil
     }
 
     private func receive(device: MTDeviceRef, fingers: UnsafeMutableRawPointer?, count: Int32, timestamp: Double) -> Int32 {
@@ -77,6 +87,11 @@ final class MultiTouchDeviceManager {
                 size: Double(finger.size),
                 state: TouchState(rawValue: finger.state) ?? .notTracking
             )
+        }
+
+        if devicesWithLoggedFrames.contains(device) == false {
+            devicesWithLoggedFrames.insert(device)
+            NSLog("Jitouch: first multitouch frame from \(deviceType.rawValue), fingers \(count), timestamp \(timestamp)")
         }
 
         handler(deviceType, points, timestamp)

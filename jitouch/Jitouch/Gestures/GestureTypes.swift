@@ -20,6 +20,40 @@ enum RecognizedGesture: String {
     case middleFixIndexFarTap = "Middle-Fix Index-Far-Tap"
     case middleFixIndexSlideOut = "Middle-Fix Index-Slide-Out"
     case middleFixIndexSlideIn = "Middle-Fix Index-Slide-In"
+
+    static let trackpadSupported: [RecognizedGesture] = [
+        .oneFixLeftTap,
+        .oneFixRightTap,
+        .threeFingerTap,
+        .fourFingerTap,
+        .threeSwipeUp,
+        .threeSwipeDown,
+        .threeSwipeLeft,
+        .threeSwipeRight
+    ]
+
+    static let magicMouseSupported: [RecognizedGesture] = [
+        .middleFixIndexNearTap,
+        .middleFixIndexFarTap,
+        .middleFixIndexSlideOut,
+        .middleFixIndexSlideIn,
+        .threeSwipeLeft,
+        .threeSwipeRight,
+        .threeSwipeUp,
+        .threeSwipeDown,
+        .middleClick
+    ]
+
+    static func supportedGestures(for device: GestureDevice) -> [String] {
+        switch device {
+        case .trackpad:
+            return trackpadSupported.map(\.rawValue)
+        case .magicMouse:
+            return magicMouseSupported.map(\.rawValue)
+        case .characterRecognition:
+            return []
+        }
+    }
 }
 
 struct TouchPoint: Equatable {

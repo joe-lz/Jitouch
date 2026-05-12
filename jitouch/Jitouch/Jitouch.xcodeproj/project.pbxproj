@@ -32,6 +32,7 @@
 		D00100000000000000000011 /* Commands/AccessibilityWindowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000011 /* Commands/AccessibilityWindowService.swift */; };
 		D00100000000000000000012 /* Commands/CommandDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000012 /* Commands/CommandDispatcher.swift */; };
 		D00100000000000000000013 /* UI/PreferencesWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000013 /* UI/PreferencesWindowController.swift */; };
+		D00100000000000000000015 /* UI/ShortcutRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00200000000000000000015 /* UI/ShortcutRecorder.swift */; };
 		D00100000000000000000014 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D00400000000000000000001 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
@@ -69,8 +70,21 @@
 		D00200000000000000000011 /* Commands/AccessibilityWindowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/AccessibilityWindowService.swift; sourceTree = "<group>"; };
 		D00200000000000000000012 /* Commands/CommandDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/CommandDispatcher.swift; sourceTree = "<group>"; };
 		D00200000000000000000013 /* UI/PreferencesWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/PreferencesWindowController.swift; sourceTree = "<group>"; };
+		D00200000000000000000015 /* UI/ShortcutRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/ShortcutRecorder.swift; sourceTree = "<group>"; };
 		D00300000000000000000001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D00300000000000000000002 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		D00300000000000000000003 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D00300000000000000000004 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D00300000000000000000005 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		D00300000000000000000006 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D00300000000000000000007 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D00300000000000000000008 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D00300000000000000000009 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D0030000000000000000000A /* th */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = th; path = th.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D0030000000000000000000B /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = ar.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D0030000000000000000000C /* bn */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bn; path = bn.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D0030000000000000000000D /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D0030000000000000000000E /* hi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hi; path = hi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D7730023274C86F000C49145 /* JitouchDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JitouchDebug.entitlements; sourceTree = "<group>"; };
 		D7AE605B274C7A8400FBD29A /* Jitouch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jitouch.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -97,6 +111,7 @@
 				D00200000000000000000004 /* App/LaunchAgentManager.swift */,
 				D00200000000000000000006 /* UI/StatusBarController.swift */,
 				D00200000000000000000013 /* UI/PreferencesWindowController.swift */,
+				D00200000000000000000015 /* UI/ShortcutRecorder.swift */,
 				D00200000000000000000007 /* Settings/JitouchSettings.swift */,
 				D00200000000000000000008 /* Settings/SettingsStore.swift */,
 				D00200000000000000000009 /* Gestures/GestureTypes.swift */,
@@ -208,6 +223,18 @@
 				Base,
 				en,
 				"zh-Hans",
+				ja,
+				ko,
+				"zh-Hant",
+				ru,
+				es,
+				fr,
+				pt,
+				th,
+				ar,
+				bn,
+				de,
+				hi,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* Jitouch */;
 			projectDirPath = "";
@@ -245,6 +272,7 @@
 				D00100000000000000000004 /* App/LaunchAgentManager.swift in Sources */,
 				D00100000000000000000006 /* UI/StatusBarController.swift in Sources */,
 				D00100000000000000000013 /* UI/PreferencesWindowController.swift in Sources */,
+				D00100000000000000000015 /* UI/ShortcutRecorder.swift in Sources */,
 				D00100000000000000000007 /* Settings/JitouchSettings.swift in Sources */,
 				D00100000000000000000008 /* Settings/SettingsStore.swift in Sources */,
 				D00100000000000000000009 /* Gestures/GestureTypes.swift in Sources */,
@@ -268,6 +296,18 @@
 			children = (
 				D00300000000000000000001 /* en */,
 				D00300000000000000000002 /* zh-Hans */,
+				D00300000000000000000003 /* ja */,
+				D00300000000000000000004 /* ko */,
+				D00300000000000000000005 /* zh-Hant */,
+				D00300000000000000000006 /* ru */,
+				D00300000000000000000007 /* es */,
+				D00300000000000000000008 /* fr */,
+				D00300000000000000000009 /* pt */,
+				D0030000000000000000000A /* th */,
+				D0030000000000000000000B /* ar */,
+				D0030000000000000000000C /* bn */,
+				D0030000000000000000000D /* de */,
+				D0030000000000000000000E /* hi */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";

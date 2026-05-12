@@ -50,6 +50,9 @@ func MTDeviceStop(_ device: MTDeviceRef)
 @_silgen_name("MTDeviceGetFamilyID")
 func MTDeviceGetFamilyID(_ device: MTDeviceRef, _ familyID: UnsafeMutablePointer<Int32>)
 
+@_silgen_name("MTDeviceGetDeviceID")
+func MTDeviceGetDeviceID(_ device: MTDeviceRef, _ deviceID: UnsafeMutablePointer<UInt64>) -> OSStatus
+
 @_silgen_name("MTDeviceIsRunning")
 func MTDeviceIsRunning(_ device: MTDeviceRef) -> Bool
 

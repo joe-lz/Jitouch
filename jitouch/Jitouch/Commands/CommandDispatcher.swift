@@ -33,7 +33,8 @@ final class CommandDispatcher {
 
     private func execute(_ command: GestureCommand, device: GestureDevice, application: String?) {
         if !command.isAction {
-            KeySimulator.press(keyCode: CGKeyCode(command.keyCode), modifiers: CGEventFlags(rawValue: command.modifierFlags))
+            activateWindowIfNeeded(device)
+            KeySimulator.press(keyCode: CGKeyCode(command.keyCode), modifiers: shortcutModifiers(from: command.modifierFlags))
             return
         }
 
@@ -130,6 +131,11 @@ final class CommandDispatcher {
 
     private func activateWindowIfNeeded(_ device: GestureDevice) {
         _ = windowService.activateWindowUnderPointer()
+    }
+
+    private func shortcutModifiers(from rawValue: UInt64) -> CGEventFlags {
+        let flags = CGEventFlags(rawValue: rawValue)
+        return flags.intersection([.maskShift, .maskControl, .maskAlternate, .maskCommand])
     }
 
     private func openDefaultBrowser() {

@@ -7,7 +7,7 @@ final class AccessibilityWindowService {
 
     func applicationUnderPointer() -> String? {
         guard let element = elementUnderPointer() else {
-            return NSWorkspace.shared.frontmostApplication?.localizedName
+            return applicationName(for: NSWorkspace.shared.frontmostApplication)
         }
         return applicationName(for: element)
     }
@@ -119,7 +119,33 @@ final class AccessibilityWindowService {
         guard let pid = pid(for: element) else {
             return nil
         }
-        return NSRunningApplication(processIdentifier: pid)?.localizedName
+        return applicationName(for: NSRunningApplication(processIdentifier: pid))
+    }
+
+    private func applicationName(for application: NSRunningApplication?) -> String? {
+        guard let application else {
+            return nil
+        }
+
+        if let bundleURL = application.bundleURL {
+            let applicationURL = containingApplicationBundleURL(for: bundleURL)
+            let displayName = FileManager.default.displayName(atPath: applicationURL.path)
+            if displayName.isEmpty == false {
+                return displayName
+            }
+        }
+
+        return application.localizedName
+    }
+
+    private func containingApplicationBundleURL(for url: URL) -> URL {
+        let components = url.pathComponents
+        guard let appIndex = components.firstIndex(where: { $0.hasSuffix(".app") }) else {
+            return url
+        }
+
+        let path = NSString.path(withComponents: Array(components.prefix(through: appIndex)))
+        return URL(fileURLWithPath: path)
     }
 
     private func pid(for element: AXUIElement) -> pid_t? {

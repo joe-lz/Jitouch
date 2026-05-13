@@ -144,6 +144,9 @@ final class PreferencesViewModel: ObservableObject {
     @Published var isShowingRestoreAlert = false
     @Published var isShowingDeleteAlert = false
     @Published var isShowingDeleteApplicationAlert = false
+    @Published var isShowingGestureTransferAlert = false
+    @Published var gestureTransferMessage = ""
+    @Published var exportedGestureSettingsURL: URL?
     @Published var generalSettings = JitouchSettings()
     @Published var iCloudSyncState = ICloudSyncState.disabled
 
@@ -419,9 +422,60 @@ final class PreferencesViewModel: ObservableObject {
         iCloudSyncState = settingsStore.iCloudSyncState
     }
 
+    func exportGestureSettings() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.propertyList]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "Jitouch Gestures.plist"
+
+        guard panel.runModal() == .OK, let url = panel.url else {
+            return
+        }
+
+        do {
+            try settingsStore.exportGestureSettings(to: url)
+            exportedGestureSettingsURL = url
+        } catch {
+            showGestureTransferMessage(L("Failed to export gesture settings."))
+        }
+    }
+
+    func importGestureSettings() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.propertyList]
+        panel.allowsMultipleSelection = false
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+
+        guard panel.runModal() == .OK, let url = panel.url else {
+            return
+        }
+
+        do {
+            try settingsStore.importGestureSettings(from: url)
+            selectedApplication = "All Applications"
+            selectedGesture = nil
+            exportedGestureSettingsURL = nil
+            showGestureTransferMessage(L("Gesture settings imported."))
+            finishSettingsChange()
+        } catch {
+            showGestureTransferMessage(L("Failed to import gesture settings."))
+        }
+    }
+
+    func openExportedGestureSettingsLocation() {
+        guard let exportedGestureSettingsURL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([exportedGestureSettingsURL])
+    }
+
     private func applyInterfaceSettings() {
         AppLocalization.currentLanguage = settingsStore.settings.appLanguage
         NSApp.appearance = settingsStore.settings.themeMode.nsAppearance
+    }
+
+    private func showGestureTransferMessage(_ message: String) {
+        gestureTransferMessage = message
+        isShowingGestureTransferAlert = true
     }
 
     func availableAddGestures() -> [String] {
@@ -1768,6 +1822,37 @@ struct DeviceSettingsView: View {
     var body: some View {
         Form {
             Section {
+                settingsRow(L("Gesture Settings")) {
+                    HStack(spacing: 10) {
+                        Button(L("Import")) {
+                            model.importGestureSettings()
+                        }
+                        Button(L("Export")) {
+                            model.exportGestureSettings()
+                        }
+                    }
+                    .frame(width: controlWidth, alignment: .trailing)
+                }
+
+                if let exportedURL = model.exportedGestureSettingsURL {
+                    settingsRow(L("Saved Path")) {
+                        Button {
+                            model.openExportedGestureSettingsLocation()
+                        } label: {
+                            Text(exportedURL.path)
+                                .lineLimit(2)
+                                .truncationMode(.middle)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: controlWidth, alignment: .trailing)
+                        }
+                        .buttonStyle(.link)
+                    }
+                }
+            } header: {
+                Text(L("Gestures"))
+            }
+
+            Section {
                 slider(L("Click speed"), value: Binding(
                     get: { model.generalSettings.clickSpeed },
                     set: { newValue in model.updateGeneral { $0.clickSpeed = newValue } }
@@ -1787,6 +1872,9 @@ struct DeviceSettingsView: View {
         .scrollContentBackground(.hidden)
         .background(Color.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .alert(model.gestureTransferMessage, isPresented: $model.isShowingGestureTransferAlert) {
+            Button(L("OK"), role: .cancel) {}
+        }
     }
 
     private func deviceSection(_ device: GestureDevice) -> some View {

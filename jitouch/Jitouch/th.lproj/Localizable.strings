@@ -21,7 +21,15 @@
 "Enabled" = "เปิดใช้งาน";
 "General" = "ทั่วไป";
 "Gesture" = "ท่าทาง";
+"Gesture Settings" = "การตั้งค่าท่าทาง";
+"Gesture settings exported." = "ส่งออกการตั้งค่าท่าทางแล้ว";
+"Gesture settings imported." = "นำเข้าการตั้งค่าท่าทางแล้ว";
+"Saved Path" = "เส้นทางที่บันทึก";
 "Gestures" = "ท่าทาง";
+"Import" = "นำเข้า";
+"Export" = "ส่งออก";
+"Failed to export gesture settings." = "ส่งออกการตั้งค่าท่าทางไม่สำเร็จ";
+"Failed to import gesture settings." = "นำเข้าการตั้งค่าท่าทางไม่สำเร็จ";
 "Settings" = "การตั้งค่า";
 "Handedness" = "มือที่ถนัด";
 "Jitouch Gesture Settings" = "การตั้งค่าท่าทาง Jitouch";

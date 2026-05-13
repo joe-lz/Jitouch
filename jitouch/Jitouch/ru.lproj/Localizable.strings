@@ -21,7 +21,15 @@
 "Enabled" = "Включено";
 "General" = "Основные";
 "Gesture" = "Жест";
+"Gesture Settings" = "Настройки жестов";
+"Gesture settings exported." = "Настройки жестов экспортированы.";
+"Gesture settings imported." = "Настройки жестов импортированы.";
+"Saved Path" = "Путь сохранения";
 "Gestures" = "Жесты";
+"Import" = "Импорт";
+"Export" = "Экспорт";
+"Failed to export gesture settings." = "Не удалось экспортировать настройки жестов.";
+"Failed to import gesture settings." = "Не удалось импортировать настройки жестов.";
 "Settings" = "Настройки";
 "Handedness" = "Ведущая рука";
 "Jitouch Gesture Settings" = "Настройки жестов Jitouch";

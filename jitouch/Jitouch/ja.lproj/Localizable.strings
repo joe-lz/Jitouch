@@ -21,7 +21,15 @@
 "Enabled" = "有効";
 "General" = "一般";
 "Gesture" = "ジェスチャー";
+"Gesture Settings" = "ジェスチャー設定";
+"Gesture settings exported." = "ジェスチャー設定を書き出しました。";
+"Gesture settings imported." = "ジェスチャー設定を読み込みました。";
+"Saved Path" = "保存先";
 "Gestures" = "ジェスチャー";
+"Import" = "読み込む";
+"Export" = "書き出す";
+"Failed to export gesture settings." = "ジェスチャー設定を書き出せませんでした。";
+"Failed to import gesture settings." = "ジェスチャー設定を読み込めませんでした。";
 "Settings" = "設定";
 "Handedness" = "利き手";
 "Jitouch Gesture Settings" = "Jitouch ジェスチャー設定";

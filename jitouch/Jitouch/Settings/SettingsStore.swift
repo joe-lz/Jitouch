@@ -16,6 +16,17 @@ struct ICloudSyncState: Equatable {
     static let disabled = ICloudSyncState(status: .disabled)
 }
 
+enum GestureSettingsTransferError: LocalizedError {
+    case invalidFile
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidFile:
+            return "Invalid gesture settings file."
+        }
+    }
+}
+
 final class SettingsStore {
     private enum Key {
         static let enabled = "enAll"
@@ -287,6 +298,41 @@ final class SettingsStore {
         }
     }
 
+    func exportGestureSettings(to url: URL) throws {
+        let dictionary: [String: Any] = [
+            "Format": "JitouchGestureSettings",
+            "Version": 1,
+            Key.trackpadCommands: Self.commandList(from: settings.trackpadCommands),
+            Key.magicMouseCommands: Self.commandList(from: settings.magicMouseCommands)
+        ]
+        let data = try PropertyListSerialization.data(fromPropertyList: dictionary, format: .xml, options: 0)
+        try data.write(to: url, options: .atomic)
+    }
+
+    func importGestureSettings(from url: URL) throws {
+        let data = try Data(contentsOf: url)
+        guard
+            let plist = try PropertyListSerialization.propertyList(from: data, options: [.mutableContainersAndLeaves], format: nil) as? [String: Any],
+            plist[Key.trackpadCommands] != nil || plist[Key.magicMouseCommands] != nil
+        else {
+            throw GestureSettingsTransferError.invalidFile
+        }
+
+        if let trackpadCommands = plist[Key.trackpadCommands] {
+            settings.trackpadCommands = Self.commandMap(from: trackpadCommands)
+            rawSettings[Key.trackpadCommands] = Self.commandList(from: settings.trackpadCommands)
+            CFPreferencesSetAppValue(Key.trackpadCommands as CFString, rawSettings[Key.trackpadCommands] as CFPropertyList, appID)
+        }
+
+        if let magicMouseCommands = plist[Key.magicMouseCommands] {
+            settings.magicMouseCommands = Self.commandMap(from: magicMouseCommands)
+            rawSettings[Key.magicMouseCommands] = Self.commandList(from: settings.magicMouseCommands)
+            CFPreferencesSetAppValue(Key.magicMouseCommands as CFString, rawSettings[Key.magicMouseCommands] as CFPropertyList, appID)
+        }
+
+        synchronize()
+    }
+
     func restoreDefaultCommands(for device: GestureDevice) {
         let defaults = DefaultsFactory.makeDefaultSettings()
         switch device {
@@ -353,11 +399,15 @@ final class SettingsStore {
     }
 
     private func saveCommandMap(_ map: [String: AppGestureCommands], key: String) {
-        rawSettings[key] = map.values
-            .sorted { $0.application.localizedStandardCompare($1.application) == .orderedAscending }
-            .map { $0.dictionary() }
+        rawSettings[key] = Self.commandList(from: map)
         CFPreferencesSetAppValue(key as CFString, rawSettings[key] as CFPropertyList, appID)
         synchronize()
+    }
+
+    private static func commandList(from map: [String: AppGestureCommands]) -> [[String: Any]] {
+        map.values
+            .sorted { $0.application.localizedStandardCompare($1.application) == .orderedAscending }
+            .map { $0.dictionary() }
     }
 
     private func configureICloudSyncAfterLoad() {

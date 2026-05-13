@@ -21,7 +21,15 @@
 "Enabled" = "ممكّن";
 "General" = "عام";
 "Gesture" = "إيماءة";
+"Gesture Settings" = "إعدادات الإيماءات";
+"Gesture settings exported." = "تم تصدير إعدادات الإيماءات.";
+"Gesture settings imported." = "تم استيراد إعدادات الإيماءات.";
+"Saved Path" = "مسار الحفظ";
 "Gestures" = "الإيماءات";
+"Import" = "استيراد";
+"Export" = "تصدير";
+"Failed to export gesture settings." = "تعذر تصدير إعدادات الإيماءات.";
+"Failed to import gesture settings." = "تعذر استيراد إعدادات الإيماءات.";
 "Settings" = "الإعدادات";
 "Handedness" = "اليد المستخدمة";
 "Jitouch Gesture Settings" = "إعدادات إيماءات Jitouch";

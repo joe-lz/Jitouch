@@ -21,7 +21,15 @@
 "Enabled" = "已啟用";
 "General" = "一般";
 "Gesture" = "手勢";
+"Gesture Settings" = "手勢設定";
+"Gesture settings exported." = "手勢設定已匯出。";
+"Gesture settings imported." = "手勢設定已匯入。";
+"Saved Path" = "儲存路徑";
 "Gestures" = "手勢";
+"Import" = "匯入";
+"Export" = "匯出";
+"Failed to export gesture settings." = "匯出手勢設定失敗。";
+"Failed to import gesture settings." = "匯入手勢設定失敗。";
 "Settings" = "設定";
 "Handedness" = "慣用手";
 "Jitouch Gesture Settings" = "Jitouch 手勢設定";

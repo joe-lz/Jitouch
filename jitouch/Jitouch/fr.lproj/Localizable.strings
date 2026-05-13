@@ -21,7 +21,15 @@
 "Enabled" = "Activé";
 "General" = "Général";
 "Gesture" = "Geste";
+"Gesture Settings" = "Réglages des gestes";
+"Gesture settings exported." = "Réglages des gestes exportés.";
+"Gesture settings imported." = "Réglages des gestes importés.";
+"Saved Path" = "Chemin enregistré";
 "Gestures" = "Gestes";
+"Import" = "Importer";
+"Export" = "Exporter";
+"Failed to export gesture settings." = "Impossible d’exporter les réglages des gestes.";
+"Failed to import gesture settings." = "Impossible d’importer les réglages des gestes.";
 "Settings" = "Réglages";
 "Handedness" = "Main dominante";
 "Jitouch Gesture Settings" = "Réglages des gestes Jitouch";

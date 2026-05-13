@@ -21,7 +21,15 @@
 "Enabled" = "सक्षम";
 "General" = "सामान्य";
 "Gesture" = "जेस्चर";
+"Gesture Settings" = "जेस्चर सेटिंग्स";
+"Gesture settings exported." = "जेस्चर सेटिंग्स एक्सपोर्ट हो गईं।";
+"Gesture settings imported." = "जेस्चर सेटिंग्स इम्पोर्ट हो गईं।";
+"Saved Path" = "सहेजा गया पथ";
 "Gestures" = "जेस्चर";
+"Import" = "इम्पोर्ट";
+"Export" = "एक्सपोर्ट";
+"Failed to export gesture settings." = "जेस्चर सेटिंग्स एक्सपोर्ट नहीं हो सकीं।";
+"Failed to import gesture settings." = "जेस्चर सेटिंग्स इम्पोर्ट नहीं हो सकीं।";
 "Settings" = "सेटिंग्स";
 "Handedness" = "मुख्य हाथ";
 "Jitouch Gesture Settings" = "Jitouch जेस्चर सेटिंग्स";

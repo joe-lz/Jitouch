@@ -21,7 +21,15 @@
 "Enabled" = "চালু";
 "General" = "সাধারণ";
 "Gesture" = "জেসচার";
+"Gesture Settings" = "জেসচার সেটিংস";
+"Gesture settings exported." = "জেসচার সেটিংস এক্সপোর্ট করা হয়েছে।";
+"Gesture settings imported." = "জেসচার সেটিংস ইমপোর্ট করা হয়েছে।";
+"Saved Path" = "সংরক্ষিত পথ";
 "Gestures" = "জেসচার";
+"Import" = "ইমপোর্ট";
+"Export" = "এক্সপোর্ট";
+"Failed to export gesture settings." = "জেসচার সেটিংস এক্সপোর্ট করা যায়নি।";
+"Failed to import gesture settings." = "জেসচার সেটিংস ইমপোর্ট করা যায়নি।";
 "Settings" = "সেটিংস";
 "Handedness" = "প্রধান হাত";
 "Jitouch Gesture Settings" = "Jitouch জেসচার সেটিংস";

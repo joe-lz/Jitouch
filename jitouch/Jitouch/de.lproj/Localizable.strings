@@ -21,7 +21,15 @@
 "Enabled" = "Aktiviert";
 "General" = "Allgemein";
 "Gesture" = "Geste";
+"Gesture Settings" = "Gesteneinstellungen";
+"Gesture settings exported." = "Gesteneinstellungen exportiert.";
+"Gesture settings imported." = "Gesteneinstellungen importiert.";
+"Saved Path" = "Gespeicherter Pfad";
 "Gestures" = "Gesten";
+"Import" = "Importieren";
+"Export" = "Exportieren";
+"Failed to export gesture settings." = "Gesteneinstellungen konnten nicht exportiert werden.";
+"Failed to import gesture settings." = "Gesteneinstellungen konnten nicht importiert werden.";
 "Settings" = "Einstellungen";
 "Handedness" = "Händigkeit";
 "Jitouch Gesture Settings" = "Jitouch Gesteneinstellungen";

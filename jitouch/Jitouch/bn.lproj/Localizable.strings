@@ -11,7 +11,10 @@
 "Command" = "কমান্ড";
 "Current Version" = "বর্তমান সংস্করণ";
 "Delete" = "মুছুন";
+"Delete All Gestures" = "সব জেসচার মুছুন";
+"Delete all gestures?" = "সব জেসচার মুছবেন?";
 "Delete this gesture?" = "এই জেসচারটি মুছবেন?";
+"All gestures for %@ will be deleted." = "%@-এর সব জেসচার মুছে ফেলা হবে।";
 "Enable Jitouch" = "Jitouch চালু করুন";
 "Enable Magic Mouse gestures" = "Magic Mouse জেসচার চালু করুন";
 "Enable trackpad gestures" = "ট্র্যাকপ্যাড জেসচার চালু করুন";
@@ -19,6 +22,7 @@
 "General" = "সাধারণ";
 "Gesture" = "জেসচার";
 "Gestures" = "জেসচার";
+"Settings" = "সেটিংস";
 "Handedness" = "প্রধান হাত";
 "Jitouch Gesture Settings" = "Jitouch জেসচার সেটিংস";
 "Left" = "বাম";

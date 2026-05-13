@@ -11,7 +11,10 @@
 "Command" = "Command";
 "Current Version" = "Current Version";
 "Delete" = "Delete";
+"Delete All Gestures" = "Delete All Gestures";
+"Delete all gestures?" = "Delete all gestures?";
 "Delete this gesture?" = "Delete this gesture?";
+"All gestures for %@ will be deleted." = "All gestures for %@ will be deleted.";
 "Enable Jitouch" = "Enable Jitouch";
 "Enable Magic Mouse gestures" = "Enable Magic Mouse gestures";
 "Enable trackpad gestures" = "Enable trackpad gestures";
@@ -19,6 +22,7 @@
 "General" = "General";
 "Gesture" = "Gesture";
 "Gestures" = "Gestures";
+"Settings" = "Settings";
 "Handedness" = "Handedness";
 "Jitouch Gesture Settings" = "Jitouch Gesture Settings";
 "Left" = "Left";

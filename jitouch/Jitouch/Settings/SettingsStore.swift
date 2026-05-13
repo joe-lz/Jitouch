@@ -274,6 +274,19 @@ final class SettingsStore {
         }
     }
 
+    func removeApplicationCommands(device: GestureDevice, application: String) {
+        guard application != "All Applications" else { return }
+
+        switch device {
+        case .trackpad:
+            settings.trackpadCommands.removeValue(forKey: application)
+            saveCommandMap(settings.trackpadCommands, key: Key.trackpadCommands)
+        case .magicMouse:
+            settings.magicMouseCommands.removeValue(forKey: application)
+            saveCommandMap(settings.magicMouseCommands, key: Key.magicMouseCommands)
+        }
+    }
+
     func restoreDefaultCommands(for device: GestureDevice) {
         let defaults = DefaultsFactory.makeDefaultSettings()
         switch device {

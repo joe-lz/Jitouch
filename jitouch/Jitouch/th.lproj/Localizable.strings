@@ -11,7 +11,10 @@
 "Command" = "คำสั่ง";
 "Current Version" = "เวอร์ชันปัจจุบัน";
 "Delete" = "ลบ";
+"Delete All Gestures" = "ลบท่าทางทั้งหมด";
+"Delete all gestures?" = "ลบท่าทางทั้งหมดหรือไม่";
 "Delete this gesture?" = "ลบท่าทางนี้หรือไม่";
+"All gestures for %@ will be deleted." = "ท่าทางทั้งหมดของ %@ จะถูกลบ";
 "Enable Jitouch" = "เปิดใช้งาน Jitouch";
 "Enable Magic Mouse gestures" = "เปิดใช้งานท่าทาง Magic Mouse";
 "Enable trackpad gestures" = "เปิดใช้งานท่าทางแทร็คแพด";
@@ -19,6 +22,7 @@
 "General" = "ทั่วไป";
 "Gesture" = "ท่าทาง";
 "Gestures" = "ท่าทาง";
+"Settings" = "การตั้งค่า";
 "Handedness" = "มือที่ถนัด";
 "Jitouch Gesture Settings" = "การตั้งค่าท่าทาง Jitouch";
 "Left" = "ซ้าย";

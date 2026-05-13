@@ -11,7 +11,10 @@
 "Command" = "Команда";
 "Current Version" = "Текущая версия";
 "Delete" = "Удалить";
+"Delete All Gestures" = "Удалить все жесты";
+"Delete all gestures?" = "Удалить все жесты?";
 "Delete this gesture?" = "Удалить этот жест?";
+"All gestures for %@ will be deleted." = "Все жесты для %@ будут удалены.";
 "Enable Jitouch" = "Включить Jitouch";
 "Enable Magic Mouse gestures" = "Включить жесты Magic Mouse";
 "Enable trackpad gestures" = "Включить жесты трекпада";
@@ -19,6 +22,7 @@
 "General" = "Основные";
 "Gesture" = "Жест";
 "Gestures" = "Жесты";
+"Settings" = "Настройки";
 "Handedness" = "Ведущая рука";
 "Jitouch Gesture Settings" = "Настройки жестов Jitouch";
 "Left" = "Левая";

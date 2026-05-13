@@ -11,7 +11,10 @@
 "Command" = "Comando";
 "Current Version" = "Versão atual";
 "Delete" = "Apagar";
+"Delete All Gestures" = "Apagar todos os gestos";
+"Delete all gestures?" = "Apagar todos os gestos?";
 "Delete this gesture?" = "Apagar este gesto?";
+"All gestures for %@ will be deleted." = "Todos os gestos de %@ serão apagados.";
 "Enable Jitouch" = "Ativar Jitouch";
 "Enable Magic Mouse gestures" = "Ativar gestos do Magic Mouse";
 "Enable trackpad gestures" = "Ativar gestos do trackpad";
@@ -19,6 +22,7 @@
 "General" = "Geral";
 "Gesture" = "Gesto";
 "Gestures" = "Gestos";
+"Settings" = "Configurações";
 "Handedness" = "Mão dominante";
 "Jitouch Gesture Settings" = "Ajustes de gestos do Jitouch";
 "Left" = "Esquerda";

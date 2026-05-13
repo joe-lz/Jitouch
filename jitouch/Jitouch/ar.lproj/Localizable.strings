@@ -11,7 +11,10 @@
 "Command" = "الأمر";
 "Current Version" = "الإصدار الحالي";
 "Delete" = "حذف";
+"Delete All Gestures" = "حذف كل الإيماءات";
+"Delete all gestures?" = "هل تريد حذف كل الإيماءات؟";
 "Delete this gesture?" = "هل تريد حذف هذه الإيماءة؟";
+"All gestures for %@ will be deleted." = "سيتم حذف كل إيماءات %@.";
 "Enable Jitouch" = "تمكين Jitouch";
 "Enable Magic Mouse gestures" = "تمكين إيماءات Magic Mouse";
 "Enable trackpad gestures" = "تمكين إيماءات لوحة التعقب";
@@ -19,6 +22,7 @@
 "General" = "عام";
 "Gesture" = "إيماءة";
 "Gestures" = "الإيماءات";
+"Settings" = "الإعدادات";
 "Handedness" = "اليد المستخدمة";
 "Jitouch Gesture Settings" = "إعدادات إيماءات Jitouch";
 "Left" = "اليسرى";

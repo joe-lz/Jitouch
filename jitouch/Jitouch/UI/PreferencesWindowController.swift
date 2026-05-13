@@ -87,6 +87,7 @@ final class PreferencesViewModel: ObservableObject {
     enum Tab: String, CaseIterable, Identifiable {
         case trackpad
         case magicMouse
+        case settings
         case general
 
         var id: String { rawValue }
@@ -95,6 +96,7 @@ final class PreferencesViewModel: ObservableObject {
             case .trackpad: L("Trackpad")
             case .magicMouse: L("Magic Mouse")
             case .general: L("General")
+            case .settings: L("Settings")
             }
         }
     }
@@ -141,6 +143,7 @@ final class PreferencesViewModel: ObservableObject {
     @Published var isShowingAddSheet = false
     @Published var isShowingRestoreAlert = false
     @Published var isShowingDeleteAlert = false
+    @Published var isShowingDeleteApplicationAlert = false
     @Published var generalSettings = JitouchSettings()
     @Published var iCloudSyncState = ICloudSyncState.disabled
 
@@ -218,7 +221,7 @@ final class PreferencesViewModel: ObservableObject {
             return .trackpad
         case .magicMouse:
             return .magicMouse
-        case .general:
+        case .general, .settings:
             return .trackpad
         }
     }
@@ -289,6 +292,10 @@ final class PreferencesViewModel: ObservableObject {
 
     var canDelete: Bool {
         selectedCommand != nil
+    }
+
+    var canDeleteApplicationCommands: Bool {
+        selectedApplication != "All Applications"
     }
 
     func reload() {
@@ -366,6 +373,14 @@ final class PreferencesViewModel: ObservableObject {
     func deleteSelectedCommand() {
         guard let selectedCommand else { return }
         settingsStore.removeCommand(gesture: selectedCommand.gesture, device: selectedDevice, application: selectedApplication)
+        selectedGesture = nil
+        finishSettingsChange()
+    }
+
+    func deleteSelectedApplicationCommands() {
+        guard canDeleteApplicationCommands else { return }
+        settingsStore.removeApplicationCommands(device: selectedDevice, application: selectedApplication)
+        selectedApplication = "All Applications"
         selectedGesture = nil
         finishSettingsChange()
     }
@@ -552,6 +567,11 @@ struct PreferencesRootView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
                     .padding(.bottom, 24)
+            case .settings:
+                DeviceSettingsView(model: model)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
             }
         }
         .frame(minWidth: 920, minHeight: 580)
@@ -570,6 +590,8 @@ struct PreferencesRootView: View {
             return "magicmouse"
         case .general:
             return "gearshape"
+        case .settings:
+            return "slider.horizontal.3"
         }
     }
 
@@ -581,7 +603,7 @@ struct PreferencesRootView: View {
                 switch tab {
                 case .trackpad, .magicMouse:
                     model.resetGestureSelection()
-                case .general:
+                case .general, .settings:
                     break
                 }
             }
@@ -646,6 +668,12 @@ struct GestureSettingsView: View {
             } message: {
                 Text(L("This gesture will be removed from the current application."))
             }
+            .alert(L("Delete all gestures?"), isPresented: $model.isShowingDeleteApplicationAlert) {
+                Button(L("Cancel"), role: .cancel) {}
+                Button(L("Delete"), role: .destructive) { model.deleteSelectedApplicationCommands() }
+            } message: {
+                Text(String(format: L("All gestures for %@ will be deleted."), model.displayName(for: model.selectedApplication)))
+            }
     }
 
     private var applicationTabs: some View {
@@ -686,7 +714,14 @@ struct GestureSettingsView: View {
                                 .listRowBackground(Color.clear)
                         }
                     } header: {
-                        Text(deviceTitle(model.selectedDevice))
+                        HStack {
+                            Text(deviceTitle(model.selectedDevice))
+                            Spacer()
+                            Button(L("Delete All Gestures")) {
+                                model.isShowingDeleteApplicationAlert = true
+                            }
+                            .disabled(!model.canDeleteApplicationCommands)
+                        }
                     }
                 }
                 .formStyle(.grouped)
@@ -1513,14 +1548,6 @@ struct GeneralSettingsView: View {
                 switchRow(L("Enable Jitouch"), isOn: binding(\.isEnabled))
                 switchRow(L("Show menu bar icon"), isOn: binding(\.showsMenuBarIcon))
                 iCloudSyncRow()
-                slider(L("Click speed"), value: Binding(
-                    get: { model.generalSettings.clickSpeed },
-                    set: { newValue in model.updateGeneral { $0.clickSpeed = newValue } }
-                ), range: 0.05...0.5)
-                slider(L("Sensitivity"), value: Binding(
-                    get: { model.generalSettings.sensitivity },
-                    set: { newValue in model.updateGeneral { $0.sensitivity = newValue } }
-                ), range: 1...8)
             } header: {
                 Text(L("General"))
             }
@@ -1534,26 +1561,6 @@ struct GeneralSettingsView: View {
                     get: { model.generalSettings.themeMode },
                     set: { value in model.updateGeneral { $0.themeMode = value } }
                 ))
-            }
-
-            Section {
-                switchRow(L("Enable trackpad gestures"), isOn: binding(\.trackpadEnabled))
-                handednessRow(Binding(
-                    get: { model.generalSettings.trackpadLeftHanded },
-                    set: { value in model.updateGeneral { $0.trackpadLeftHanded = value } }
-                ))
-            } header: {
-                Text(L("Trackpad"))
-            }
-
-            Section {
-                switchRow(L("Enable Magic Mouse gestures"), isOn: binding(\.magicMouseEnabled))
-                handednessRow(Binding(
-                    get: { model.generalSettings.magicMouseLeftHanded },
-                    set: { value in model.updateGeneral { $0.magicMouseLeftHanded = value } }
-                ))
-            } header: {
-                Text(L("Magic Mouse"))
             }
 
             Section {
@@ -1576,13 +1583,6 @@ struct GeneralSettingsView: View {
             get: { model.generalSettings[keyPath: keyPath] },
             set: { value in model.updateGeneral { $0[keyPath: keyPath] = value } }
         )
-    }
-
-    private func slider(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
-        generalRow(label) {
-            Slider(value: value, in: range)
-                .frame(width: controlWidth)
-        }
     }
 
     private func switchRow(_ label: String, isOn: Binding<Bool>) -> some View {
@@ -1620,16 +1620,6 @@ struct GeneralSettingsView: View {
         }
     }
 
-    private func handednessRow(_ selection: Binding<Bool>) -> some View {
-        generalRow(L("Handedness")) {
-            HStack {
-                Spacer(minLength: 0)
-                handednessControl(selection)
-            }
-            .frame(width: controlWidth, alignment: .trailing)
-        }
-    }
-
     private func languageRow(_ selection: Binding<AppLanguage>) -> some View {
         generalRow(L("Language")) {
             HStack {
@@ -1660,36 +1650,6 @@ struct GeneralSettingsView: View {
             }
             .frame(width: controlWidth, alignment: .trailing)
         }
-    }
-
-    private func handednessControl(_ selection: Binding<Bool>) -> some View {
-        HStack(spacing: 0) {
-            segmentedButton(title: L("Right"), isSelected: selection.wrappedValue == false) {
-                selection.wrappedValue = false
-            }
-            segmentedButton(title: L("Left"), isSelected: selection.wrappedValue == true) {
-                selection.wrappedValue = true
-            }
-        }
-        .padding(2)
-        .frame(width: controlWidth)
-        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-    }
-
-    private func segmentedButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.body.weight(.medium))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 5)
-                .background {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(isSelected ? Color.accentColor : Color.clear)
-                }
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
-        }
-        .buttonStyle(.plain)
     }
 
     private func languageTitle(_ language: AppLanguage) -> String {
@@ -1797,6 +1757,164 @@ struct GeneralSettingsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+}
+
+struct DeviceSettingsView: View {
+    @ObservedObject var model: PreferencesViewModel
+    private let labelWidth: CGFloat = 220
+    private let controlWidth: CGFloat = 260
+    private let columnSpacing: CGFloat = 24
+
+    var body: some View {
+        Form {
+            Section {
+                slider(L("Click speed"), value: Binding(
+                    get: { model.generalSettings.clickSpeed },
+                    set: { newValue in model.updateGeneral { $0.clickSpeed = newValue } }
+                ), range: 0.05...0.5)
+                slider(L("Sensitivity"), value: Binding(
+                    get: { model.generalSettings.sensitivity },
+                    set: { newValue in model.updateGeneral { $0.sensitivity = newValue } }
+                ), range: 1...8)
+            } header: {
+                Text(L("General"))
+            }
+
+            deviceSection(.trackpad)
+            deviceSection(.magicMouse)
+        }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func deviceSection(_ device: GestureDevice) -> some View {
+        Section {
+            switchRow(enableTitle(for: device), isOn: enabledBinding(for: device))
+            handednessRow(handednessBinding(for: device))
+        } header: {
+            Text(deviceTitle(device))
+        }
+    }
+
+    private func enableTitle(for device: GestureDevice) -> String {
+        switch device {
+        case .trackpad:
+            return L("Enable trackpad gestures")
+        case .magicMouse:
+            return L("Enable Magic Mouse gestures")
+        }
+    }
+
+    private func enabledBinding(for device: GestureDevice) -> Binding<Bool> {
+        switch device {
+        case .trackpad:
+            return binding(\.trackpadEnabled)
+        case .magicMouse:
+            return binding(\.magicMouseEnabled)
+        }
+    }
+
+    private func handednessBinding(for device: GestureDevice) -> Binding<Bool> {
+        Binding(
+            get: {
+                switch device {
+                case .trackpad:
+                    return model.generalSettings.trackpadLeftHanded
+                case .magicMouse:
+                    return model.generalSettings.magicMouseLeftHanded
+                }
+            },
+            set: { value in
+                model.updateGeneral { settings in
+                    switch device {
+                    case .trackpad:
+                        settings.trackpadLeftHanded = value
+                    case .magicMouse:
+                        settings.magicMouseLeftHanded = value
+                    }
+                }
+            }
+        )
+    }
+
+    private func binding(_ keyPath: WritableKeyPath<JitouchSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { model.generalSettings[keyPath: keyPath] },
+            set: { value in model.updateGeneral { $0[keyPath: keyPath] = value } }
+        )
+    }
+
+    private func switchRow(_ label: String, isOn: Binding<Bool>) -> some View {
+        settingsRow(label) {
+            HStack {
+                Spacer()
+                Toggle("", isOn: isOn)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            .frame(width: controlWidth)
+        }
+    }
+
+    private func slider(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+        settingsRow(label) {
+            Slider(value: value, in: range)
+                .frame(width: controlWidth)
+        }
+    }
+
+    private func handednessRow(_ selection: Binding<Bool>) -> some View {
+        settingsRow(L("Handedness")) {
+            HStack {
+                Spacer(minLength: 0)
+                handednessControl(selection)
+            }
+            .frame(width: controlWidth, alignment: .trailing)
+        }
+    }
+
+    private func handednessControl(_ selection: Binding<Bool>) -> some View {
+        HStack(spacing: 0) {
+            segmentedButton(title: L("Right"), isSelected: selection.wrappedValue == false) {
+                selection.wrappedValue = false
+            }
+            segmentedButton(title: L("Left"), isSelected: selection.wrappedValue == true) {
+                selection.wrappedValue = true
+            }
+        }
+        .padding(2)
+        .frame(width: controlWidth)
+        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    private func segmentedButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.body.weight(.medium))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5)
+                .background {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isSelected ? Color.accentColor : Color.clear)
+                }
+                .foregroundStyle(isSelected ? Color.white : Color.primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func settingsRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: columnSpacing) {
+            Text(label)
+                .frame(width: labelWidth, alignment: .leading)
+            Spacer(minLength: columnSpacing)
+            content()
+                .frame(width: controlWidth, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 private func deviceTitle(_ device: GestureDevice) -> String {

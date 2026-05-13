@@ -11,7 +11,10 @@
 "Command" = "命令";
 "Current Version" = "当前版本";
 "Delete" = "删除";
+"Delete All Gestures" = "删除全部手势";
+"Delete all gestures?" = "删除全部手势？";
 "Delete this gesture?" = "删除这个手势？";
+"All gestures for %@ will be deleted." = "%@ 的所有手势都会被删除。";
 "Enable Jitouch" = "启用 Jitouch";
 "Enable Magic Mouse gestures" = "启用妙控鼠标手势";
 "Enable trackpad gestures" = "启用妙控板手势";
@@ -19,6 +22,7 @@
 "General" = "通用";
 "Gesture" = "手势";
 "Gestures" = "手势";
+"Settings" = "配置";
 "Handedness" = "惯用手";
 "Jitouch Gesture Settings" = "Jitouch 手势设置";
 "Left" = "左手";

@@ -11,7 +11,10 @@
 "Command" = "コマンド";
 "Current Version" = "現在のバージョン";
 "Delete" = "削除";
+"Delete All Gestures" = "すべてのジェスチャーを削除";
+"Delete all gestures?" = "すべてのジェスチャーを削除しますか？";
 "Delete this gesture?" = "このジェスチャーを削除しますか？";
+"All gestures for %@ will be deleted." = "%@ のすべてのジェスチャーが削除されます。";
 "Enable Jitouch" = "Jitouch を有効にする";
 "Enable Magic Mouse gestures" = "Magic Mouse ジェスチャーを有効にする";
 "Enable trackpad gestures" = "トラックパッドジェスチャーを有効にする";
@@ -19,6 +22,7 @@
 "General" = "一般";
 "Gesture" = "ジェスチャー";
 "Gestures" = "ジェスチャー";
+"Settings" = "設定";
 "Handedness" = "利き手";
 "Jitouch Gesture Settings" = "Jitouch ジェスチャー設定";
 "Left" = "左";

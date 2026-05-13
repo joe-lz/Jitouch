@@ -11,7 +11,10 @@
 "Command" = "명령";
 "Current Version" = "현재 버전";
 "Delete" = "삭제";
+"Delete All Gestures" = "모든 제스처 삭제";
+"Delete all gestures?" = "모든 제스처를 삭제할까요?";
 "Delete this gesture?" = "이 제스처를 삭제할까요?";
+"All gestures for %@ will be deleted." = "%@의 모든 제스처가 삭제됩니다.";
 "Enable Jitouch" = "Jitouch 활성화";
 "Enable Magic Mouse gestures" = "Magic Mouse 제스처 활성화";
 "Enable trackpad gestures" = "트랙패드 제스처 활성화";
@@ -19,6 +22,7 @@
 "General" = "일반";
 "Gesture" = "제스처";
 "Gestures" = "제스처";
+"Settings" = "설정";
 "Handedness" = "주 사용 손";
 "Jitouch Gesture Settings" = "Jitouch 제스처 설정";
 "Left" = "왼쪽";

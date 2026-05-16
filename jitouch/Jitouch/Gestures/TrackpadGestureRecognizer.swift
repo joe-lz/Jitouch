@@ -7,6 +7,7 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
     private var oneFixedTapTimestamp: TimeInterval = 0
     private var oneFixedTapAnchor: TouchPoint?
     private var oneFixedTapMovingTouch: TouchPoint?
+    private var oneFixedTapWasCancelled = false
     private var twoFixDoubleTapTimestamp: TimeInterval = 0
     private var twoFixDoubleTapCandidate: RecognizedGesture?
     private var hasTriggered = false
@@ -26,6 +27,7 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
         }
 
         updateOneFixedTapTracking(touches: touches, timestamp: timestamp)
+        updateOneFixedTapCancellation(touches: touches, timestamp: timestamp)
         if let tap = oneFixedTap(touches: touches, timestamp: timestamp) {
             clearOneFixedTapTracking()
             return tap
@@ -112,6 +114,36 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
         oneFixedTapTimestamp = timestamp
         oneFixedTapAnchor = anchor
         oneFixedTapMovingTouch = touches.first { $0.identifier != anchor.identifier } ?? touches.sortedByIdentifier().first
+        oneFixedTapWasCancelled = false
+    }
+
+    private mutating func updateOneFixedTapCancellation(touches: [TouchPoint], timestamp: TimeInterval) {
+        guard
+            oneFixedTapWasCancelled == false,
+            touches.count == 2,
+            let anchor = oneFixedTapAnchor,
+            let movingTouch = oneFixedTapMovingTouch,
+            let currentAnchor = touches.first(where: { $0.identifier == anchor.identifier }),
+            let currentMovingTouch = touches.first(where: { $0.identifier == movingTouch.identifier })
+        else {
+            return
+        }
+
+        let anchorDX = currentAnchor.x - anchor.x
+        let anchorDY = currentAnchor.y - anchor.y
+        let movingDX = currentMovingTouch.x - movingTouch.x
+        let movingDY = currentMovingTouch.y - movingTouch.y
+        let anchorDistance = hypot(anchorDX, anchorDY)
+        let movingDistance = hypot(movingDX, movingDY)
+        let averageVerticalMovement = (abs(anchorDY) + abs(movingDY)) / 2
+        let averageHorizontalMovement = (abs(anchorDX) + abs(movingDX)) / 2
+        let isTwoFingerVerticalScroll = anchorDY.sign == movingDY.sign
+            && averageVerticalMovement > 0.035
+            && averageVerticalMovement > averageHorizontalMovement * 1.5
+
+        if anchorDistance > 0.045 || movingDistance > 0.09 || isTwoFingerVerticalScroll || timestamp - oneFixedTapTimestamp > 0.28 {
+            oneFixedTapWasCancelled = true
+        }
     }
 
     private func swipeGesture(requiredFingers: Int, touches: [TouchPoint]) -> RecognizedGesture? {
@@ -265,6 +297,7 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
             touches.count == 1,
             let anchor = oneFixedTapAnchor,
             let movingTouch = oneFixedTapMovingTouch,
+            oneFixedTapWasCancelled == false,
             timestamp - oneFixedTapTimestamp < 0.4
         else {
             return nil
@@ -282,6 +315,7 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
         oneFixedTapTimestamp = 0
         oneFixedTapAnchor = nil
         oneFixedTapMovingTouch = nil
+        oneFixedTapWasCancelled = false
     }
 
     private mutating func updateTwoFixDoubleTapTracking(touches: [TouchPoint], timestamp: TimeInterval) {

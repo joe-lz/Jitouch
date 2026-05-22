@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.delegate = self
         return controller
     }()
+    private var accessibilityRetryTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         settingsStore.onExternalSettingsChanged = { [weak self] in
@@ -23,12 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarController.reload()
         requestAccessibilityTrustIfNeeded()
         gestureController.start()
+        startAccessibilityRetryIfNeeded()
         observeSettingsChanges()
         observeWake()
         preferencesWindowController.show()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        accessibilityRetryTimer?.invalidate()
         LaunchAgentManager.unload()
         gestureController.stop()
     }
@@ -65,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func systemDidWake() {
         gestureController.reload()
+        startAccessibilityRetryIfNeeded()
     }
 
     private func settingsStoreDidReceiveExternalSettings() {
@@ -80,6 +84,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true] as CFDictionary
         let trustedAfterPrompt = AXIsProcessTrustedWithOptions(options)
         NSLog("Jitouch: accessibility trusted after prompt: \(trustedAfterPrompt)")
+    }
+
+    private func startAccessibilityRetryIfNeeded() {
+        guard AXIsProcessTrusted() == false, accessibilityRetryTimer == nil else {
+            return
+        }
+
+        accessibilityRetryTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self else {
+                timer.invalidate()
+                return
+            }
+
+            guard AXIsProcessTrusted() else {
+                return
+            }
+
+            NSLog("Jitouch: accessibility trusted, restarting gesture listeners")
+            timer.invalidate()
+            accessibilityRetryTimer = nil
+            gestureController.reload()
+        }
     }
 
     private func applyInterfaceSettings() {

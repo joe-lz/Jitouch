@@ -1,6 +1,7 @@
 import Foundation
 
 struct TrackpadGestureRecognizer: GestureRecognizer {
+    private let oneFixedTapMinimumAnchorLeadTime: TimeInterval = 0.08
     private var previousTouches: [TouchPoint] = []
     private var startTouches: [TouchPoint] = []
     private var startTimestamp: TimeInterval = 0
@@ -107,6 +108,9 @@ struct TrackpadGestureRecognizer: GestureRecognizer {
 
     private mutating func updateOneFixedTapTracking(touches: [TouchPoint], timestamp: TimeInterval) {
         guard previousTouches.count == 1, touches.count == 2 else {
+            return
+        }
+        guard timestamp - startTimestamp >= oneFixedTapMinimumAnchorLeadTime else {
             return
         }
 

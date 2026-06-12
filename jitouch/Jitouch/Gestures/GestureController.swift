@@ -21,7 +21,9 @@ final class GestureController {
 
     func start() {
         deviceManager = MultiTouchDeviceManager { [weak self] device, touches, timestamp in
-            self?.handle(device: device, touches: touches, timestamp: timestamp)
+            DispatchQueue.main.async {
+                self?.handle(device: device, touches: touches, timestamp: timestamp)
+            }
         }
         deviceManager?.start()
 
